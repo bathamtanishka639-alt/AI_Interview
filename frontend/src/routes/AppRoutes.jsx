@@ -9,12 +9,6 @@ import Settings from '../pages/Settings';
 import NotFound from '../pages/NotFound';
 import { InterviewProvider } from '../context/InterviewContext';
 
-/**
- * Route map.
- * - LandingPage, ModeSelection, InterviewScreen: full-bleed (no sidebar/navbar)
- * - Dashboard, FinalReport, Settings: AppShell (sidebar + navbar)
- * All routes wrapped in InterviewProvider for global CV/session state.
- */
 export default function AppRoutes() {
   return (
     <InterviewProvider>

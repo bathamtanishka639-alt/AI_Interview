@@ -1,8 +1,5 @@
 import { apiRequest } from '../apiClient';
 
-/**
- * Get interview report by sessionId or reportId.
- */
 export const getReport = async (id) => {
   const res = await apiRequest(`/interview/report/${id}`);
   const d = res.data;

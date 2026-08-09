@@ -10,8 +10,6 @@ export default function Settings() {
   return (
     <PageContainer title="Developer Dashboard" subtitle="System diagnostics, Breeth memory graph, and LLM configuration">
       <div className="max-w-4xl mx-auto space-y-6 antialiased">
-        
-        {/* Technical Header Tabs */}
         <div className="flex border-b border-border text-xs font-medium space-x-4">
           {[
             { id: 'system', label: 'System Overview', icon: Cpu },
@@ -37,7 +35,6 @@ export default function Settings() {
           })}
         </div>
 
-        {/* Tab 1: System Overview */}
         {activeTab === 'system' && (
           <div className="space-y-6">
             <div className="rounded-lg bg-surface-raised border border-border p-6 shadow-subtle space-y-4">
@@ -93,7 +90,6 @@ export default function Settings() {
           </div>
         )}
 
-        {/* Tab 2: Breeth Graph Status */}
         {activeTab === 'memory' && (
           <div className="rounded-lg bg-surface-raised border border-border p-6 shadow-subtle space-y-4">
             <div className="flex items-center justify-between">
@@ -123,7 +119,6 @@ export default function Settings() {
           </div>
         )}
 
-        {/* Tab 3: API Endpoint Diagnostics */}
         {activeTab === 'api' && (
           <div className="rounded-lg bg-surface-raised border border-border p-6 shadow-subtle space-y-4">
             <div>

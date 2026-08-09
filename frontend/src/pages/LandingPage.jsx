@@ -32,7 +32,7 @@ export default function LandingPage() {
   const { resolved, toggle } = useTheme();
   const [uploadState, setUploadState] = useState(UPLOAD_STATES.IDLE);
   const [isGlobalDragging, setIsGlobalDragging] = useState(false);
-  const [activeTab, setActiveTab] = useState('upload'); // 'upload' | 'how-it-works' | 'interview-types' | 'context-driven'
+  const [activeTab, setActiveTab] = useState('upload');
   const [parsingStep, setParsingStep] = useState(0);
   const [error, setError] = useState('');
   const [fileName, setFileName] = useState('');
@@ -93,7 +93,6 @@ export default function LandingPage() {
     }
   }, [setCvProfile]);
 
-  // Global Drag and Drop Handler (Drop anywhere on window)
   useEffect(() => {
     let dragCounter = 0;
 
@@ -200,7 +199,6 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-surface text-text-primary transition-colors duration-200 antialiased selection:bg-agent-500/20 selection:text-agent-600">
       
-      {/* Top Header / Navigation */}
       <header className="sticky top-0 z-30 glass border-b border-border/60">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
@@ -211,7 +209,6 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Dashboard Quick Access */}
             <button
               onClick={() => navigate('/dashboard')}
               className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-btn bg-[rgba(124,127,251,0.10)] border border-[rgba(124,127,251,0.25)] text-[#6063E8] dark:text-[#9EA1FC] hover:bg-[rgba(124,127,251,0.20)] hover:border-[rgba(124,127,251,0.45)] hover:scale-[1.02] active:scale-[0.98] transition-all min-h-[36px]"
@@ -220,7 +217,6 @@ export default function LandingPage() {
               <span>Dashboard</span>
             </button>
 
-            {/* Theme Toggle Button */}
             <button
               aria-label="Toggle theme"
               onClick={toggle}
@@ -232,9 +228,7 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Hero Section — Mesh Gradient Background */}
       <section className="relative overflow-hidden bg-mesh">
-        {/* Spec: two floating CSS blur shapes for atmosphere — no images */}
         <div className="absolute left-[5%] top-[15%] w-40 h-40 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(20,224,180,0.18) 0%, transparent 70%)', filter: 'blur(32px)' }} aria-hidden="true" />
         <div className="absolute right-[6%] top-[25%] w-32 h-32 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(124,127,251,0.16) 0%, transparent 70%)', filter: 'blur(28px)' }} aria-hidden="true" />
 
@@ -253,7 +247,6 @@ export default function LandingPage() {
             )}
           </div>
 
-          {/* Spec: H1 responsive 32→56→72px, tight tracking, gradient on accent word */}
           <h1 className="font-display text-[2rem] sm:text-[3.5rem] md:text-[4.5rem] font-bold tracking-tight text-text-primary max-w-3xl mx-auto leading-[1.05]">
             Practice the interview you're{' '}
             <span style={{ background: 'linear-gradient(135deg, #14E0B4 0%, #7C7FFB 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>actually going to have.</span>
@@ -287,9 +280,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Strict Single-Section Accordion Section */}
       <section ref={sectionContainerRef} className="max-w-5xl mx-auto px-4 sm:px-6 py-12 border-t border-border/60">
-        {/* Section Navigation Buttons / Tabs */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-10">
           {[
             { id: 'how-it-works', label: 'How it works', icon: Sparkles },
@@ -317,7 +308,6 @@ export default function LandingPage() {
           })}
         </div>
 
-        {/* Dynamic Section Content — Strictly ONE active section */}
         <div className="w-full min-h-[360px] h-auto">
           <AnimatePresence mode="wait">
             {activeTab === 'upload' && (
@@ -330,7 +320,6 @@ export default function LandingPage() {
                 className="max-w-2xl mx-auto"
               >
                 {uploadState !== UPLOAD_STATES.SUCCESS ? (
-                  /* Dropzone */
                   <div
                     onDrop={handleDrop}
                     onDragOver={handleDragOver}
@@ -354,7 +343,6 @@ export default function LandingPage() {
                     />
 
                     {isLoading ? (
-                      /* Polished Processing Checklist */
                       <div className="py-4 max-w-md mx-auto">
                         <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-signal-500/20 to-agent-500/20 border border-agent-500/20 text-agent-500 flex items-center justify-center mx-auto mb-6">
                           <Sparkles size={22} className="animate-spin" />
@@ -384,7 +372,6 @@ export default function LandingPage() {
                         </div>
                       </div>
                     ) : uploadState === UPLOAD_STATES.ERROR ? (
-                      /* Error State */
                       <div className="py-4">
                         <div className="w-12 h-12 rounded-2xl bg-coral-500/10 text-coral-500 flex items-center justify-center mx-auto mb-4 border border-coral-500/20">
                           <AlertCircle size={24} />
@@ -393,7 +380,6 @@ export default function LandingPage() {
                         <p className="text-xs text-text-secondary">Click or drop a different file to try again</p>
                       </div>
                     ) : (
-                      /* Idle Upload Prompt */
                       <div className="py-4">
                         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-agent-500/15 to-signal-500/10 border border-agent-500/20 flex items-center justify-center mx-auto mb-5 text-agent-500">
                           <Upload size={24} />
@@ -409,7 +395,6 @@ export default function LandingPage() {
                     )}
                   </div>
                 ) : (
-                  /* Parsed Summary Card */
                   <div className="rounded-card-lg glass border border-border/60 p-6 shadow-raised">
                     <div className="flex items-center justify-between pb-4 border-b border-border/60 mb-6">
                       <div className="flex items-center gap-3">
@@ -616,7 +601,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="border-t border-border/60 glass py-8 text-xs text-text-secondary">
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
@@ -630,7 +614,6 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      {/* Global Drag & Drop Overlay */}
       <AnimatePresence>
         {isGlobalDragging && (
           <motion.div

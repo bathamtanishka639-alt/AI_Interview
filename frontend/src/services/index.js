@@ -1,4 +1,3 @@
-// src/services/index.js — composition root; unaffected by backend swap
 import { config } from '../config/env';
 import * as realInterviews from './real/interviews.api';
 import * as mockInterviews from './mock/interviews.mock';

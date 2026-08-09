@@ -71,7 +71,6 @@ export default function Dashboard() {
       actions={
         cvProfile ? (
           <div className="flex items-center gap-2.5">
-            {/* Practice Again — secondary */}
             <button
               onClick={handlePracticeAgain}
               className="flex items-center gap-2 px-4 py-2.5 rounded-btn border border-[rgba(124,127,251,0.30)] bg-[rgba(124,127,251,0.08)] text-[#6063E8] dark:text-[#9EA1FC] font-semibold text-xs hover:border-[rgba(124,127,251,0.55)] hover:bg-[rgba(124,127,251,0.15)] hover:scale-[1.02] active:scale-[0.98] transition-all min-h-[40px]"
@@ -79,7 +78,6 @@ export default function Dashboard() {
               <RotateCcw size={14} />
               Practice Again
             </button>
-            {/* New Interview — primary gradient */}
             <button
               onClick={() => navigate('/')}
               className="flex items-center gap-2 px-4 py-2.5 rounded-btn text-white font-bold text-xs hover:scale-[1.02] active:scale-[0.98] transition-all shadow-glow min-h-[40px]"
@@ -94,7 +92,6 @@ export default function Dashboard() {
     >
       <div className="space-y-5 max-w-5xl mx-auto">
 
-        {/* Loading */}
         {isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-36 w-full" />
@@ -102,9 +99,7 @@ export default function Dashboard() {
           </div>
         ) : completedInterviews.length === 0 ? (
 
-          /* ─── Empty State ──────────────────────────────────────────────── */
           <div className="bg-mesh rounded-card-lg border border-border p-14 text-center max-w-xl mx-auto my-6">
-            {/* Geometric icon — gradient, atmospheric */}
             <div
               className="w-16 h-16 rounded-[20px] flex items-center justify-center mx-auto mb-5 border border-[rgba(20,224,180,0.22)]"
               style={{ background: 'linear-gradient(135deg, rgba(20,224,180,0.15) 0%, rgba(124,127,251,0.10) 100%)' }}
@@ -129,11 +124,8 @@ export default function Dashboard() {
 
         ) : (
           <>
-            {/* ─── Latest Session Card ─────────────────────────────────────── */}
-            {/* Spec: FLAT surface for data-dense content — not glass */}
             {latestInterview && (
               <div className="rounded-card-lg bg-surface-raised border border-border shadow-raised p-6">
-                {/* Header row */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-5 border-b border-border/60">
                   <div>
                     <span className="text-[10px] font-mono text-[#7C7FFB] uppercase tracking-wider font-bold">
@@ -151,7 +143,6 @@ export default function Dashboard() {
 
                   <div className="flex items-center gap-5">
                     <div className="text-right">
-                      {/* Spec: numeric score in JetBrains Mono, gradient on number */}
                       <span
                         className="font-mono text-3xl font-bold"
                         style={{
@@ -176,9 +167,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* ─── Insight Grid — flat tinted cells ────────────────────── */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-5 text-xs">
-                  {/* Key Strengths */}
                   <div className="p-3.5 rounded-[14px] bg-[rgba(20,224,180,0.06)] border border-[rgba(20,224,180,0.18)]">
                     <p className="flex items-center gap-1 font-mono text-[10px] text-[#0BBFA0] dark:text-[#14E0B4] font-bold uppercase mb-2">
                       <CheckCircle2 size={11} />
@@ -190,7 +179,6 @@ export default function Dashboard() {
                     </ul>
                   </div>
 
-                  {/* Improvement */}
                   <div className="p-3.5 rounded-[14px] bg-[rgba(255,176,32,0.06)] border border-[rgba(255,176,32,0.18)]">
                     <p className="flex items-center gap-1 font-mono text-[10px] text-[#E09800] dark:text-[#FFB020] font-bold uppercase mb-2">
                       <AlertTriangle size={11} />
@@ -201,7 +189,6 @@ export default function Dashboard() {
                     </ul>
                   </div>
 
-                  {/* Next Focus */}
                   <div className="p-3.5 rounded-[14px] bg-[rgba(124,127,251,0.06)] border border-[rgba(124,127,251,0.18)]">
                     <p className="flex items-center gap-1 font-mono text-[10px] text-[#6063E8] dark:text-[#9EA1FC] font-bold uppercase mb-2">
                       <Target size={11} />
@@ -213,8 +200,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* ─── Interview History Table ──────────────────────────────────── */}
-            {/* Spec: flat surface — legible, high-contrast data display */}
             <div className="rounded-card-lg bg-surface-raised border border-border shadow-raised p-6">
               <h3 className="font-display text-base font-bold text-text-primary mb-4 tracking-tight">
                 Interview History
