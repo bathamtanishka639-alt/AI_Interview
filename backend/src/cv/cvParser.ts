@@ -2,9 +2,41 @@ import { CandidateProfile } from '../models/interfaces';
 import { LLMService } from '../services/llmService';
 
 export class CvParser {
+  public static isCvOrResumeDocument(text: string): { valid: boolean; reason?: string } {
+    if (!text || text.trim().length < 30) {
+      return { valid: false, reason: 'The uploaded file is empty or too short. Please upload a complete CV or resume.' };
+    }
+
+    const lower = text.toLowerCase();
+    const cvSignals = [
+      'experience', 'education', 'skills', 'projects', 'summary', 'work', 'employment',
+      'history', 'qualifications', 'certifications', 'curriculum', 'vitae', 'resume',
+      'bachelor', 'master', 'university', 'college', 'engineer', 'developer', 'architect',
+      'analyst', 'internship', 'tech stack', 'technologies', 'proficiencies', 'contact',
+      'email', 'phone', 'portfolio', 'github', 'linkedin', 'coursework', 'diploma'
+    ];
+
+    let matchCount = 0;
+    for (const signal of cvSignals) {
+      if (lower.includes(signal)) {
+        matchCount++;
+      }
+    }
+
+    if (matchCount < 2) {
+      return {
+        valid: false,
+        reason: 'The uploaded document does not appear to be a valid CV or resume. Please upload a document containing work experience, skills, and education.'
+      };
+    }
+
+    return { valid: true };
+  }
+
   public static async parse(cvText: string): Promise<CandidateProfile> {
-    if (!cvText || cvText.trim().length < 30) {
-      throw new Error('CV text is too short or empty. Please upload a valid CV.');
+    const check = CvParser.isCvOrResumeDocument(cvText);
+    if (!check.valid) {
+      throw new Error(check.reason);
     }
 
     const systemPrompt = `You are an expert CV/Resume Parser. Extract structured information from the provided CV text and return it ONLY as a valid JSON object.

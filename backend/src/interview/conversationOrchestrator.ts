@@ -62,7 +62,7 @@ export class ConversationOrchestrator {
         systemPrompt,
         userPrompt,
         TURN_DECISION_SCHEMA,
-        700
+        400
       );
 
       if (llmRes.provider === 'gemini' && llmRes.content) {
@@ -89,7 +89,7 @@ export class ConversationOrchestrator {
           sp2,
           up2,
           TURN_DECISION_SCHEMA,
-          700
+          400
         );
         if (retryRes.provider === 'gemini' && retryRes.content) {
           decision = JSON.parse(retryRes.content) as TurnDecision;
