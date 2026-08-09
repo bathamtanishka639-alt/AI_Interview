@@ -61,6 +61,8 @@ export interface Question {
   promptText: string;
   expectedKeyPoints: string[];
   cvGrounding?: string; // which CV fact this question is grounded in
+  curriculumDay?: number; // 1-30 day from curriculum
+  curriculumModule?: string; // module title from curriculum
 }
 
 export interface TimedQuestionLog {

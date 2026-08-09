@@ -91,19 +91,18 @@ router.get('/interviews', async (req: Request, res: Response) => {
   res.json({ success: true, data: summaries });
 });
 
-// GET /api/candidate — kept for compatibility
+import { CurriculumLoader } from '../curriculum/curriculumLoader';
+
+// GET /api/candidate — return candidate profile data
 router.get('/candidate', (req: Request, res: Response) => {
-  const sessions = interviewEngine.getSessions();
-  if (sessions.length > 0) {
-    const latest = sessions[sessions.length - 1];
-    return res.json({ success: true, data: latest.cvProfile });
-  }
-  res.json({ success: true, data: null });
+  const candidate = CurriculumLoader.getCandidate();
+  res.json({ success: true, data: candidate });
 });
 
-// GET /api/curriculum — kept for compatibility
+// GET /api/curriculum — return 30-Day AI Engineer Curriculum
 router.get('/curriculum', (req: Request, res: Response) => {
-  res.json({ success: true, data: { curriculumId: 'cv-grounded', title: 'CV-Grounded Interview', track: 'Dynamic' } });
+  const curriculum = CurriculumLoader.getCurriculum();
+  res.json({ success: true, data: curriculum });
 });
 
 // POST /api/interview/start — start a CV-grounded interview session
@@ -230,21 +229,31 @@ router.post('/interview', async (req: Request, res: Response) => {
         // Interview Completed — Return Submission Feedback Object
         const report = await interviewEngine.getReport(sessionId);
         const feedback = report?.feedback || {
-          overallSummary: 'Interview completed.',
-          strengths: ['Demonstrated technical understanding'],
-          weaknesses: ['Elaborate further on trade-offs'],
-          recommendations: ['Practice system architecture scenarios']
+          overallSummary: 'Interview evaluation completed.',
+          strengths: ['Demonstrated technical understanding of core concepts.'],
+          weaknesses: ['Elaborate further on trade-offs and edge case handling.'],
+          recommendations: ['Practice system architecture scenarios and failure recovery.']
         };
 
         const fbAny = feedback as any;
+        const strengthsList = Array.isArray(feedback.strengths) && feedback.strengths.length > 0
+          ? feedback.strengths
+          : ['Demonstrated technical understanding of core concepts.'];
+        const gapsList = Array.isArray(feedback.weaknesses) && feedback.weaknesses.length > 0
+          ? feedback.weaknesses
+          : (Array.isArray(fbAny.misconceptions) && fbAny.misconceptions.length > 0 ? fbAny.misconceptions : ['Elaborate further on trade-offs and failure modes.']);
+        const nextList = Array.isArray(feedback.recommendations) && feedback.recommendations.length > 0
+          ? feedback.recommendations
+          : (Array.isArray(fbAny.suggestedRevisions) && fbAny.suggestedRevisions.length > 0 ? fbAny.suggestedRevisions : ['Review production scalability and system design principles.']);
+
         return res.json({
           reply: result.reply,
           done: true,
           feedback: {
             summary: feedback.overallSummary || 'Interview evaluation completed.',
-            strengths: feedback.strengths || [],
-            gaps: feedback.weaknesses || fbAny.misconceptions || [],
-            next: feedback.recommendations || fbAny.suggestedRevisions || []
+            strengths: strengthsList,
+            gaps: gapsList,
+            next: nextList
           }
         });
       }
