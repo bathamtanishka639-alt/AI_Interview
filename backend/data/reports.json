@@ -1,0 +1,41 @@
+[
+  {
+    "reportId": "rep-1786183158290",
+    "sessionId": "session-1786183122297",
+    "candidateId": "cand-1786183122297",
+    "candidateName": "TANISHKA BATHAM",
+    "interviewMode": "mixed",
+    "createdAt": "2026-08-08T09:59:18.290Z",
+    "feedback": {
+      "technicalScore": 95,
+      "communicationScore": 86,
+      "problemSolvingScore": 91,
+      "confidenceScore": 60,
+      "strengths": [
+        "Engaged with interview questions",
+        "Demonstrated relevant experience"
+      ],
+      "weaknesses": [
+        "Could provide more specific examples",
+        "Some answers lacked technical depth"
+      ],
+      "misconceptions": [],
+      "topicsCovered": [
+        "your primary technology"
+      ],
+      "recommendations": [
+        "Practice explaining technical decisions with concrete examples",
+        "Prepare STAR format responses for behavioral questions"
+      ],
+      "suggestedRevisions": [
+        "your primary technology"
+      ],
+      "overallSummary": "Completed 1 interview exchanges. Performance shows promise with areas for improvement in technical depth and specificity.",
+      "modeSpecificNote": "This was a mixed interview focusing on CV-grounded topics."
+    },
+    "transcriptSummary": {
+      "totalQuestions": 1,
+      "totalExchanges": 1
+    }
+  }
+]

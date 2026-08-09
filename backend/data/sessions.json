@@ -1,0 +1,123 @@
+[
+  {
+    "sessionId": "session-1786183122317",
+    "candidateId": "cand-1786183122317",
+    "curriculumId": "cv-grounded",
+    "interviewMode": "mixed",
+    "cvProfile": {
+      "name": "TANISHKA BATHAM",
+      "email": "bathamtanishka639@gmail.com",
+      "phone": "+91-9569404822",
+      "education": [],
+      "skills": [],
+      "programmingLanguages": [],
+      "frameworks": [],
+      "tools": [],
+      "projects": [],
+      "internships": [],
+      "workExperience": [],
+      "certifications": [],
+      "achievements": [],
+      "rawSummary": "TANISHKA BATHAM   +91-9569404822   ✉bathamtanishka639@gmail.com LinkedIn: https://www.linkedin.com/in/tanishka-batham-48166a306/"
+    },
+    "status": "active",
+    "difficulty": "intermediate",
+    "currentQuestionIndex": 0,
+    "questionsAsked": [
+      "Tell me about your experience with your primary technology and give me a concrete example of how you used it in one of your projects."
+    ],
+    "questions": [
+      {
+        "questionId": "q-fallback-1",
+        "topic": "your primary technology",
+        "difficulty": "intermediate",
+        "promptText": "Tell me about your experience with your primary technology and give me a concrete example of how you used it in one of your projects.",
+        "expectedKeyPoints": [
+          "Concrete example",
+          "Technical depth",
+          "Problem solving"
+        ],
+        "cvGrounding": "your primary technology from CV skills"
+      }
+    ],
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an expert professional interviewer conducting a MIXED interview.\n\nCANDIDATE CV SUMMARY:\nName: TANISHKA BATHAM\nEmail: bathamtanishka639@gmail.com\n\nINTERVIEW MODE: MIXED\nYou are conducting a MIXED interview combining technical, HR, and behavioral questions. \n- Start with a technical question about a key CV project or technology\n- Follow with an HR or behavioral question about the candidate's experience\n- Intelligently switch between modes based on the candidate's answers\n- Ensure roughly balanced coverage across technical, professional, and behavioral dimensions\nKeep all questions grounded in this candidate's specific CV.\n\nABSOLUTE RULES:\n1. Every question MUST be grounded in something explicitly stated in the candidate's CV.\n2. You MAY explore related concepts (e.g. if CV mentions React, you may ask about state management).\n3. You MUST NOT ask about technologies or experiences with no connection to this CV.\n4. Do not repeat questions already asked in this session.\n5. Keep your responses focused and professional — you are a senior interviewer, not a chatbot.\n6. When evaluating answers: identify depth, accuracy, and confidence.\n7. If a candidate gives an incomplete answer, probe specifically for what's missing.\n8. If a candidate clearly does not know, acknowledge and move to a different CV topic.",
+        "timestamp": "2026-08-08T09:58:46.881Z"
+      },
+      {
+        "role": "assistant",
+        "content": "Hello TANISHKA! Welcome to your Mixed interview. I've reviewed your CV and I'm ready to explore your experience in depth.\n\nTell me about your experience with your primary technology and give me a concrete example of how you used it in one of your projects.",
+        "timestamp": "2026-08-08T09:58:46.881Z"
+      }
+    ],
+    "startTime": "2026-08-08T09:58:42.317Z"
+  },
+  {
+    "sessionId": "session-1786183122297",
+    "candidateId": "cand-1786183122297",
+    "curriculumId": "cv-grounded",
+    "interviewMode": "mixed",
+    "cvProfile": {
+      "name": "TANISHKA BATHAM",
+      "email": "bathamtanishka639@gmail.com",
+      "phone": "+91-9569404822",
+      "education": [],
+      "skills": [],
+      "programmingLanguages": [],
+      "frameworks": [],
+      "tools": [],
+      "projects": [],
+      "internships": [],
+      "workExperience": [],
+      "certifications": [],
+      "achievements": [],
+      "rawSummary": "TANISHKA BATHAM   +91-9569404822   ✉bathamtanishka639@gmail.com LinkedIn: https://www.linkedin.com/in/tanishka-batham-48166a306/"
+    },
+    "status": "completed",
+    "difficulty": "intermediate",
+    "currentQuestionIndex": 0,
+    "questionsAsked": [
+      "Tell me about your experience with your primary technology and give me a concrete example of how you used it in one of your projects."
+    ],
+    "questions": [
+      {
+        "questionId": "q-fallback-1",
+        "topic": "your primary technology",
+        "difficulty": "intermediate",
+        "promptText": "Tell me about your experience with your primary technology and give me a concrete example of how you used it in one of your projects.",
+        "expectedKeyPoints": [
+          "Concrete example",
+          "Technical depth",
+          "Problem solving"
+        ],
+        "cvGrounding": "your primary technology from CV skills"
+      }
+    ],
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an expert professional interviewer conducting a MIXED interview.\n\nCANDIDATE CV SUMMARY:\nName: TANISHKA BATHAM\nEmail: bathamtanishka639@gmail.com\n\nINTERVIEW MODE: MIXED\nYou are conducting a MIXED interview combining technical, HR, and behavioral questions. \n- Start with a technical question about a key CV project or technology\n- Follow with an HR or behavioral question about the candidate's experience\n- Intelligently switch between modes based on the candidate's answers\n- Ensure roughly balanced coverage across technical, professional, and behavioral dimensions\nKeep all questions grounded in this candidate's specific CV.\n\nABSOLUTE RULES:\n1. Every question MUST be grounded in something explicitly stated in the candidate's CV.\n2. You MAY explore related concepts (e.g. if CV mentions React, you may ask about state management).\n3. You MUST NOT ask about technologies or experiences with no connection to this CV.\n4. Do not repeat questions already asked in this session.\n5. Keep your responses focused and professional — you are a senior interviewer, not a chatbot.\n6. When evaluating answers: identify depth, accuracy, and confidence.\n7. If a candidate gives an incomplete answer, probe specifically for what's missing.\n8. If a candidate clearly does not know, acknowledge and move to a different CV topic.",
+        "timestamp": "2026-08-08T09:58:48.234Z"
+      },
+      {
+        "role": "assistant",
+        "content": "Hello TANISHKA! Welcome to your Mixed interview. I've reviewed your CV and I'm ready to explore your experience in depth.\n\nTell me about your experience with your primary technology and give me a concrete example of how you used it in one of your projects.",
+        "timestamp": "2026-08-08T09:58:48.235Z"
+      },
+      {
+        "role": "user",
+        "content": "To share your experience, state your primary technology clearly, explain a project where you used it, describe the specific problem you solved, and share the final result.Key Points to CoverName the technology: State your main programming language or tool (for example, Python, React, or Java).Describe the project: Name the project and explain its main goal.Explain your role: Tell what part of the work you did yourself.Share the result: Mention how your work helped the team or users.",
+        "timestamp": "2026-08-08T09:59:13.455Z"
+      },
+      {
+        "role": "assistant",
+        "content": "Thank you, TANISHKA! That completes your Mixed interview.\n\nYour evaluation report has been generated. Overall performance score: **91/100**.\n\nCompleted 1 interview exchanges. Performance shows promise with areas for improvement in technical depth and specificity.",
+        "timestamp": "2026-08-08T09:59:18.290Z"
+      }
+    ],
+    "startTime": "2026-08-08T09:58:42.297Z",
+    "endTime": "2026-08-08T09:59:17.930Z"
+  }
+]

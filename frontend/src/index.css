@@ -1,0 +1,155 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Design Token Layer ─────────────────────────────────────────────────── */
+/* Light theme — exact spec values */
+:root {
+  --bg:             247 248 252;   /* #F7F8FC soft cool white */
+  --surface:        255 255 255;   /* #FFFFFF card surface   */
+  --surface-raised: 255 255 255;   /* #FFFFFF elevated card  */
+  --border:         228 231 238;   /* #E4E7EE                */
+  --border-subtle:  241 243 248;   /* #F1F3F8 soft divider   */
+  --text-primary:   16 19 28;      /* #10131C                */
+  --text-secondary: 91 100 114;    /* #5B6472                */
+  --accent:         20 224 180;    /* #14E0B4 signal teal — focus rings */
+}
+
+/* Dark theme — exact spec values */
+.dark {
+  --bg:             10 13 20;      /* #0A0D14 near-black cool */
+  --surface:        18 22 31;      /* #12161F                 */
+  --surface-raised: 20 25 36;      /* #141924 elevated card   */
+  --border:         35 40 56;      /* #232838                 */
+  --border-subtle:  26 30 44;      /* #1A1E2C soft divider    */
+  --text-primary:   243 245 249;   /* #F3F5F9                 */
+  --text-secondary: 151 160 178;   /* #97A0B2                 */
+  --accent:         20 224 180;    /* #14E0B4 signal teal     */
+}
+
+/* ─── Base Typography ────────────────────────────────────────────────────── */
+html {
+  color-scheme: light dark;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: rgb(var(--bg));
+  color: rgb(var(--text-primary));
+  @apply antialiased;
+  selection-background-color: rgba(20, 224, 180, 0.2);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Display headings — Space Grotesk, tight tracking */
+h1, h2, h3, .font-display {
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+h4, h5, h6 {
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.015em;
+}
+
+/* Numeric data — JetBrains Mono for visual separation */
+.font-data, .font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ─── Glass Utility ──────────────────────────────────────────────────────── */
+/* Spec: translucent bg + backdrop-blur-xl + 1px hairline border */
+.glass {
+  background:         rgba(255, 255, 255, 0.60);
+  backdrop-filter:    blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border:             1px solid rgba(15, 20, 30, 0.06);
+  box-shadow:         0 1px 0 rgba(255, 255, 255, 0.8) inset;
+}
+
+.dark .glass {
+  background:         rgba(255, 255, 255, 0.05);
+  backdrop-filter:    blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border:             1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:         0 1px 0 rgba(255, 255, 255, 0.04) inset;
+}
+
+/* ─── Mesh Background Utility ────────────────────────────────────────────── */
+/* Uses spec palette: signal #14E0B4 + agent #7C7FFB */
+.bg-mesh {
+  background-image:
+    radial-gradient(at 18% 22%, rgba(20, 224, 180, 0.18) 0px, transparent 55%),
+    radial-gradient(at 82% 5%,  rgba(124, 127, 251, 0.16) 0px, transparent 55%),
+    radial-gradient(at 58% 82%, rgba(124, 127, 251, 0.10) 0px, transparent 40%);
+  background-color: rgb(var(--bg));
+}
+
+.dark .bg-mesh {
+  background-image:
+    radial-gradient(at 18% 22%, rgba(20, 224, 180, 0.10) 0px, transparent 55%),
+    radial-gradient(at 82% 5%,  rgba(124, 127, 251, 0.14) 0px, transparent 55%),
+    radial-gradient(at 58% 82%, rgba(124, 127, 251, 0.08) 0px, transparent 40%);
+  background-color: rgb(var(--bg));
+}
+
+/* ─── Gradient Text Utility ──────────────────────────────────────────────── */
+/* Use only on hero accent word or score ring number */
+.gradient-text {
+  background: linear-gradient(135deg, #14E0B4 0%, #7C7FFB 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* ─── Focus States (Accessibility — non-negotiable) ─────────────────────── */
+/* 2px signal-teal outline, 2px offset, on EVERY interactive element */
+:focus-visible {
+  outline:        2px solid #14E0B4;
+  outline-offset: 2px;
+  border-radius:  8px;
+}
+
+/* ─── Scrollbars ─────────────────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  {
+  background:    rgb(var(--border));
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--text-secondary), 0.35);
+}
+
+/* ─── Reduced Motion (Accessibility — non-negotiable) ────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:       0.01ms !important;
+    animation-iteration-count: 1     !important;
+    transition-duration:      0.01ms !important;
+    scroll-behavior:          auto   !important;
+  }
+}
+
+/* ─── Touch Target Minimum ───────────────────────────────────────────────── */
+/* All buttons/links get min 44px touch target at base breakpoint */
+@media (max-width: 640px) {
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width:  44px;
+  }
+}
+
+/* ─── Print Styles (Report page) ─────────────────────────────────────────── */
+@media print {
+  .glass { background: white !important; backdrop-filter: none !important; }
+  nav, header, footer, button { display: none !important; }
+  * { color: #000 !important; border-color: #ddd !important; }
+}
