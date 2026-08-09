@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CheckCircle2, Download, RotateCcw, Brain } from 'lucide-react';
+import { CheckCircle2, Download, RotateCcw, Brain, Sparkles } from 'lucide-react';
 import PageContainer from '../components/layout/PageContainer';
 import Skeleton from '../components/ui/Skeleton';
 import ErrorState from '../components/ui/ErrorState';
@@ -34,7 +34,7 @@ const GRADIENT_TEXT_STYLE = {
 export default function FinalReport() {
   const { interviewId } = useParams();
   const navigate = useNavigate();
-  const { cvProfile, setCvProfile, sessionId } = useInterview();
+  const { cvProfile, setCvProfile, sessionId, resetInterview } = useInterview();
   const [isBreethInspectorOpen, setIsBreethInspectorOpen] = useState(false);
 
   const { data: allInterviews } = useAsync(interviewsService.listInterviews);
@@ -152,13 +152,44 @@ export default function FinalReport() {
               <p className={`text-xs font-bold mt-0.5 ${ratingColor}`}>{ratingText}</p>
             </div>
 
-            <button
-              onClick={() => setIsBreethInspectorOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-btn bg-surface-raised border border-border text-text-primary hover:border-[rgba(124,127,251,0.40)] transition-all text-xs font-medium shadow-subtle min-h-[36px]"
-            >
-              <Brain size={14} className="text-[#7C7FFB]" />
-              Breeth Inspector
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => {
+                  if (!cvProfile) {
+                    setCvProfile({
+                      name: report?.candidateName || 'Candidate',
+                      skills: report?.topicsCovered || ['Software Development'],
+                      programmingLanguages: [], frameworks: [], tools: [], projects: [],
+                      education: [], internships: [], workExperience: [], certifications: [],
+                      achievements: [], rawSummary: 'Practiced Candidate Profile'
+                    });
+                  }
+                  navigate('/interview/setup');
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-btn text-white text-xs font-semibold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-glow min-h-[36px]"
+                style={{ background: 'linear-gradient(135deg, #14E0B4 0%, #7C7FFB 100%)' }}
+              >
+                <RotateCcw size={13} />
+                Practice Again
+              </button>
+              <button
+                onClick={() => {
+                  resetInterview();
+                  navigate('/');
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-btn border border-border text-text-primary text-xs font-semibold hover:border-border/80 transition-all min-h-[36px]"
+              >
+                <Sparkles size={13} className="text-[#7C7FFB]" />
+                New Interview
+              </button>
+              <button
+                onClick={() => setIsBreethInspectorOpen(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-btn bg-surface-raised border border-border text-text-primary hover:border-[rgba(124,127,251,0.40)] transition-all text-xs font-medium shadow-subtle min-h-[36px]"
+              >
+                <Brain size={14} className="text-[#7C7FFB]" />
+                Breeth Inspector
+              </button>
+            </div>
           </div>
         </div>
 
@@ -334,6 +365,17 @@ export default function FinalReport() {
           >
             <RotateCcw size={13} />
             Practice Again
+          </button>
+
+          <button
+            onClick={() => {
+              resetInterview();
+              navigate('/');
+            }}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-btn border border-border text-text-primary font-semibold text-xs hover:border-border/80 transition-all min-h-[40px]"
+          >
+            <Sparkles size={13} className="text-[#7C7FFB]" />
+            Start New Interview
           </button>
 
           <button

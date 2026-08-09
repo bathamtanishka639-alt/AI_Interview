@@ -30,7 +30,7 @@ export default function InterviewScreen() {
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
 
-  const { cvProfile, interviewMode, sessionId, setSessionId, setSessionData, setReportId } = useInterview();
+  const { cvProfile, setCvProfile, interviewMode, sessionId, setSessionId, setSessionData, setReportId, resetInterview } = useInterview();
 
   const [stage,              setStage]              = useState('loading');
   const [messages,           setMessages]           = useState([]);
@@ -286,9 +286,38 @@ export default function InterviewScreen() {
               View Evaluation Report
               <ArrowRight size={14} />
             </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  if (!cvProfile) {
+                    setCvProfile({
+                      name: cvProfile?.name || 'Candidate',
+                      skills: ['Software Development'],
+                      programmingLanguages: [], frameworks: [], tools: [], projects: [],
+                      education: [], internships: [], workExperience: [], certifications: [],
+                      achievements: [], rawSummary: 'Practiced Candidate Profile'
+                    });
+                  }
+                  navigate('/interview/setup');
+                }}
+                className="flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-btn border border-[rgba(124,127,251,0.30)] bg-[rgba(124,127,251,0.08)] text-[#6063E8] dark:text-[#9EA1FC] text-xs font-semibold hover:border-[rgba(124,127,251,0.55)] transition-all min-h-[40px]"
+              >
+                <Sparkles size={13} />
+                Practice Again
+              </button>
+              <button
+                onClick={() => {
+                  resetInterview();
+                  navigate('/');
+                }}
+                className="flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-btn border border-border text-text-primary text-xs font-semibold hover:border-border/80 transition-all min-h-[40px]"
+              >
+                Start New
+              </button>
+            </div>
             <button
               onClick={() => navigate('/dashboard')}
-              className="py-3 px-7 rounded-btn border border-border text-text-secondary text-xs font-medium hover:text-text-primary hover:border-border/80 transition-all min-h-[44px]"
+              className="py-2.5 px-7 rounded-btn border border-border text-text-secondary text-xs font-medium hover:text-text-primary hover:border-border/80 transition-all min-h-[40px]"
             >
               Return to Dashboard
             </button>
