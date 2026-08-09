@@ -37,7 +37,9 @@ export class LLMService {
     }
 
     const generationConfig: Record<string, any> = {
-      maxOutputTokens: maxTokens
+      maxOutputTokens: maxTokens,
+      temperature: 0.1,
+      topP: 0.85
     };
 
     if (responseSchema) {

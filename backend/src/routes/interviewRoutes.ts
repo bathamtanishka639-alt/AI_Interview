@@ -52,7 +52,10 @@ router.post('/cv/parse', upload.single('cv'), async (req: Request, res: Response
     if (err.message.includes('Only PDF and DOCX')) {
       return res.status(415).json({ success: false, error: err.message });
     }
-    return res.status(500).json({ success: false, error: 'CV parsing failed. Please try again with a different file.' });
+    if (err.message.includes('does not appear to be a valid CV') || err.message.includes('too short or empty')) {
+      return res.status(400).json({ success: false, error: err.message });
+    }
+    return res.status(500).json({ success: false, error: 'CV parsing failed. Please try again with a valid CV or resume file.' });
   }
 });
 
