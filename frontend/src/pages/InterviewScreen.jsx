@@ -28,6 +28,7 @@ export default function InterviewScreen() {
   const navigate = useNavigate();
   const toast    = useToast();
   const scrollRef = useRef(null);
+  const inputRef = useRef(null);
 
   const { cvProfile, interviewMode, sessionId, setSessionId, setSessionData, setReportId } = useInterview();
 
@@ -69,10 +70,12 @@ export default function InterviewScreen() {
       setTotalQuestions(data.totalQuestions || 5);
       setCurrentIndex(0);
 
-      const now    = Date.now();
+      const now = Date.now();
       const startMs = data.interviewStartedAt ? new Date(data.interviewStartedAt).getTime() : now;
       setInterviewStartedAtMs(startMs);
       setQuestionStartedAtMs(now);
+      setQuestionElapsedSec(0);
+      setQuestionRemainingSec(QUESTION_DURATION_SEC);
       setAnswerStartedAtIso(null);
       setHasTypedForCurrentQ(false);
 
@@ -87,7 +90,7 @@ export default function InterviewScreen() {
   };
 
   useEffect(() => {
-    if (stage !== 'active' || !interviewStartedAtMs || !questionStartedAtMs) return;
+    if (stage !== 'active' || isAgentTyping || !interviewStartedAtMs || !questionStartedAtMs) return;
     const interval = setInterval(() => {
       const now = Date.now();
       const elapsedGlobal = Math.floor((now - interviewStartedAtMs) / 1000);
@@ -95,9 +98,15 @@ export default function InterviewScreen() {
       const elapsedQ = Math.floor((now - questionStartedAtMs) / 1000);
       setQuestionElapsedSec(elapsedQ);
       setQuestionRemainingSec(Math.max(0, QUESTION_DURATION_SEC - elapsedQ));
-    }, 250);
+    }, 1000);
     return () => clearInterval(interval);
-  }, [stage, interviewStartedAtMs, questionStartedAtMs]);
+  }, [stage, isAgentTyping, interviewStartedAtMs, questionStartedAtMs]);
+
+  useEffect(() => {
+    if (!isAgentTyping && stage === 'active') {
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [isAgentTyping, stage]);
 
   const handleInputChange = (e) => {
     const val = e.target.value;
@@ -127,7 +136,6 @@ export default function InterviewScreen() {
     try {
       const result = await interviewsService.submitAnswer(sessionId, userText, finalStatus, answerStartedAtIso);
       const now = Date.now();
-      setQuestionStartedAtMs(now);
       setAnswerStartedAtIso(null);
       setHasTypedForCurrentQ(false);
       setCurrentIndex(result.currentQuestionIndex ?? currentIndex + 1);
@@ -144,6 +152,10 @@ export default function InterviewScreen() {
     } finally {
       setIsAgentTyping(false);
       isTransitioningRef.current = false;
+      const readyNow = Date.now();
+      setQuestionStartedAtMs(readyNow);
+      setQuestionElapsedSec(0);
+      setQuestionRemainingSec(QUESTION_DURATION_SEC);
     }
   }, [sessionId, answerStartedAtIso, currentIndex, setReportId, toast]);
 
@@ -442,6 +454,7 @@ export default function InterviewScreen() {
 
           <div className="relative rounded-[20px] glass border border-border/60 focus-within:border-[rgba(20,224,180,0.55)] transition-all shadow-raised p-3">
             <textarea
+              ref={inputRef}
               value={input}
               onChange={handleInputChange}
               onKeyDown={(e) => {
