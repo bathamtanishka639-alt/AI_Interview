@@ -43,7 +43,12 @@ Unlike simple chat interfaces or rigid single-shot prompt generators, this platf
 - Records temporal timeline events (`question_asked`, `candidate_answer`, `evaluation`, `difficulty_adjustment`, `next_question_reasoning`).
 - Persists progressive candidate beliefs (strengths +5, missing info -5) across sessions to adapt future interviews.
 
-### 🎨 6. "Liquid Signal" Design System (Frontend)
+### ⏱️ 6. Real-Time Session Timing Protocol
+- **30-Minute Total Interview Limit**: Gives candidates 30 minutes total to complete their 10 tailored curriculum questions.
+- **3-Minute Per-Question Window**: Provides 3 minutes per question for deep technical explanations.
+- **30-Second Initial Typing Window**: Requires starting an answer within 30s before auto-advancing unattempted questions.
+
+### 🎨 7. "Liquid Signal" Design System (Frontend)
 - Built with React 18, Vite, TailwindCSS, and Framer Motion.
 - Glassmorphism surfaces, dark mode palette, Space Grotesk typography, JetBrains Mono data displays, Signal Pulse loading animations, and global drag-and-drop CV upload.
 

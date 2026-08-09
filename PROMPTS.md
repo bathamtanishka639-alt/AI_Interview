@@ -92,6 +92,21 @@ This document records the **Development Prompts Log** (prompts given during proj
 
 ---
 
+### Prompt 6: Real-Time Timer & Session Duration Upgrade
+
+> **Developer / User Prompt:**
+> "The 15 sec initial typing window is too low — upgrade to 30 sec. After that start 3 min timer (upgrade from 2 to 3 mins). Also, if there are 10 questions each, give total 30 mins for the entire interview."
+
+**AI Architectural Response & Implementation:**
+- Configured real-time session timer limits in [`InterviewScreen.jsx`](file:///Users/tanishkabatham/Desktop/AI_Interview/frontend/src/pages/InterviewScreen.jsx):
+  - `GLOBAL_DURATION_SEC = 1800` (30-minute global session limit for 10 curriculum questions).
+  - `QUESTION_DURATION_SEC = 180` (3-minute per-question answer window).
+  - `START_TYPING_WINDOW_SEC = 30` (30-second initial window to begin typing before auto-advancing unattempted questions).
+- Updated backend global session timeout threshold in [`interviewEngine.ts`](file:///Users/tanishkabatham/Desktop/AI_Interview/backend/src/interview/interviewEngine.ts) to `1,800,000` ms (30 minutes).
+- Updated fallback session duration defaults in [`FinalReport.jsx`](file:///Users/tanishkabatham/Desktop/AI_Interview/frontend/src/pages/FinalReport.jsx) to `1800` seconds.
+
+---
+
 ## 2. Runtime System Prompts & LLM Orchestration
 
 ### Base System Prompt Template
