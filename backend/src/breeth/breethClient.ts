@@ -76,8 +76,7 @@ export class BreethClient {
         });
 
         if (searchRes.ok) {
-          const searchData: any = await searchRes.json();
-          console.log(`[BreethClient] Live API query retrieved ${searchData.edges?.length || 0} edges for candidate ${candidateId}`);
+          // Success
         }
       } catch (err: any) {
         console.warn(`[BreethClient] Live API search warning: ${err.message}`);

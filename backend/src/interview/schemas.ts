@@ -1,17 +1,3 @@
-/**
- * TURN_DECISION_SCHEMA
- *
- * The authoritative Gemini responseSchema for a single interview turn.
- * This schema enforces that the model MUST complete structured reasoning
- * (evaluate → decide → respond) before any natural-language output exists.
- *
- * Rules enforced by schema:
- * - evaluation.quality must be one of the 6 allowed enum values
- * - decision.type must be FOLLOW_UP or NEW_TOPIC
- * - decision.difficulty must be one of the 4 DifficultyLevel values
- * - question is a required string (the single next question — no lists allowed)
- * - acknowledgement is a required string (1-2 sentences, no cheerleading)
- */
 export const TURN_DECISION_SCHEMA = {
   type: 'OBJECT',
   properties: {
@@ -95,9 +81,6 @@ export const TURN_DECISION_SCHEMA = {
   required: ['evaluation', 'decision', 'acknowledgement', 'question']
 };
 
-/**
- * Difficulty order for hysteresis logic.
- */
 export const DIFFICULTY_ORDER: Record<string, number> = {
   beginner: 0,
   intermediate: 1,

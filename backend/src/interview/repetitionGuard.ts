@@ -1,14 +1,3 @@
-/**
- * RepetitionGuard
- *
- * Tracks all questions asked in a session and prevents the orchestrator
- * from asking the same (or very similar) question twice.
- *
- * Similarity is detected via:
- *  1. Exact text match (normalized)
- *  2. High word overlap (Jaccard similarity ≥ 0.65)
- *  3. Topic + opening verb match (structural similarity)
- */
 export class RepetitionGuard {
   private askedNormalized: string[] = [];
   private askedWordSets: Set<string>[] = [];
@@ -19,30 +8,20 @@ export class RepetitionGuard {
     }
   }
 
-  /**
-   * Register a question that has been asked (called after it is delivered).
-   */
   public register(question: string): void {
     const norm = this.normalize(question);
     this.askedNormalized.push(norm);
     this.askedWordSets.push(this.wordSet(norm));
   }
 
-  /**
-   * Returns true if the candidate question is too similar to an already-asked one.
-   */
   public isDuplicate(candidate: string): boolean {
     const norm = this.normalize(candidate);
     const wset = this.wordSet(norm);
 
     for (let i = 0; i < this.askedNormalized.length; i++) {
-      // 1. Exact match
       if (this.askedNormalized[i] === norm) return true;
-
-      // 2. Jaccard similarity ≥ 0.65
       if (this.jaccard(wset, this.askedWordSets[i]) >= 0.65) return true;
 
-      // 3. Opening phrase match (first 8 words same)
       const candidateStart = norm.split(' ').slice(0, 8).join(' ');
       const existingStart = this.askedNormalized[i].split(' ').slice(0, 8).join(' ');
       if (candidateStart.length > 20 && candidateStart === existingStart) return true;

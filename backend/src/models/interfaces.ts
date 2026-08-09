@@ -60,18 +60,18 @@ export interface Question {
   difficulty: DifficultyLevel;
   promptText: string;
   expectedKeyPoints: string[];
-  cvGrounding?: string; // which CV fact this question is grounded in
-  curriculumDay?: number; // 1-30 day from curriculum
-  curriculumModule?: string; // module title from curriculum
+  cvGrounding?: string;
+  curriculumDay?: number;
+  curriculumModule?: string;
 }
 
 export interface TimedQuestionLog {
   questionId: string;
   topic: string;
   promptText: string;
-  questionStartedAt: string; // ISO UTC string
-  answerStartedAt?: string; // ISO UTC string when candidate first typed
-  answerSubmittedAt?: string; // ISO UTC string when submitted/timed out
+  questionStartedAt: string;
+  answerStartedAt?: string;
+  answerSubmittedAt?: string;
   answer: string;
   durationSeconds: number;
   status: QuestionStatus;
@@ -92,13 +92,13 @@ export interface InterviewSession {
   status: 'active' | 'completed' | 'paused';
   difficulty: DifficultyLevel;
   currentQuestionIndex: number;
-  questionsAsked: string[]; // track to avoid repeats
+  questionsAsked: string[];
   questions: Question[];
   messages: Message[];
   startTime: string;
   endTime?: string;
-  interviewStartedAt?: string; // ISO UTC string
-  interviewEndedAt?: string; // ISO UTC string
+  interviewStartedAt?: string;
+  interviewEndedAt?: string;
   interviewDurationSeconds?: number;
   timedQuestions?: TimedQuestionLog[];
   breethMemory?: {
