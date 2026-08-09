@@ -5,14 +5,12 @@ import { InterviewEngine } from '../interview/interviewEngine';
 import { CvParser } from '../cv/cvParser';
 import { CandidateProfile, InterviewMode } from '../models/interfaces';
 
-// pdf-parse v1 exports a CJS function; use require to avoid TS import issues
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require('pdf-parse') as (buffer: Buffer) => Promise<{ text: string }>;
 
 const router = Router();
 const interviewEngine = new InterviewEngine();
 
-// Multer: accept PDF and DOCX, max 5MB
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
@@ -26,9 +24,6 @@ const upload = multer({
   }
 });
 
-// ========== CV PARSING ==========
-
-// POST /api/cv/parse — accepts file upload (PDF or DOCX)
 router.post('/cv/parse', upload.single('cv'), async (req: Request, res: Response) => {
   try {
     if (!req.file) {
@@ -41,7 +36,6 @@ router.post('/cv/parse', upload.single('cv'), async (req: Request, res: Response
       const pdfData = await pdfParse(req.file.buffer);
       rawText = pdfData.text;
     } else {
-      // DOCX
       const result = await mammoth.extractRawText({ buffer: req.file.buffer });
       rawText = result.value;
     }
@@ -64,7 +58,6 @@ router.post('/cv/parse', upload.single('cv'), async (req: Request, res: Response
 
 // ========== INTERVIEW SESSIONS ==========
 
-// GET /api/interviews — list completed sessions only
 router.get('/interviews', async (req: Request, res: Response) => {
   const sessions = interviewEngine.getSessions().filter(s => s.status === 'completed');
   const summaries = await Promise.all(sessions.map(async (s) => {
@@ -93,19 +86,16 @@ router.get('/interviews', async (req: Request, res: Response) => {
 
 import { CurriculumLoader } from '../curriculum/curriculumLoader';
 
-// GET /api/candidate — return candidate profile data
 router.get('/candidate', (req: Request, res: Response) => {
   const candidate = CurriculumLoader.getCandidate();
   res.json({ success: true, data: candidate });
 });
 
-// GET /api/curriculum — return 30-Day AI Engineer Curriculum
 router.get('/curriculum', (req: Request, res: Response) => {
   const curriculum = CurriculumLoader.getCurriculum();
   res.json({ success: true, data: curriculum });
 });
 
-// POST /api/interview/start — start a CV-grounded interview session
 router.post('/interview/start', async (req: Request, res: Response) => {
   const { cvProfile, interviewMode, difficulty = 'intermediate' } = req.body;
 
@@ -141,7 +131,6 @@ router.post('/interview/start', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/interview/message — send candidate answer and get AI response
 router.post('/interview/message', async (req: Request, res: Response) => {
   const { sessionId, message = '', status, answerStartedAt } = req.body;
 
@@ -173,7 +162,6 @@ router.post('/interview/message', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/interview — Hackathon Submission & Judge API Contract Compatibility Route
 router.post('/interview', async (req: Request, res: Response) => {
   try {
     const { sessionId, candidate, message, status, answerStartedAt } = req.body;
@@ -182,7 +170,6 @@ router.post('/interview', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'sessionId is required.' });
     }
 
-    // CASE 1: Start Request (Candidate object provided or initial start)
     if (candidate || (!message && !interviewEngine.getSession(sessionId))) {
       const candObj = candidate || {};
       const cvProfile: CandidateProfile = {
@@ -216,7 +203,6 @@ router.post('/interview', async (req: Request, res: Response) => {
       });
     }
 
-    // CASE 2: Turn Request (Candidate message or status transition provided)
     if (message !== undefined || status !== undefined) {
       const result = await interviewEngine.handleMessage(sessionId, message || '', status, answerStartedAt);
 
@@ -226,7 +212,6 @@ router.post('/interview', async (req: Request, res: Response) => {
           done: false
         });
       } else {
-        // Interview Completed — Return Submission Feedback Object
         const report = await interviewEngine.getReport(sessionId);
         const feedback = report?.feedback || {
           overallSummary: 'Interview evaluation completed.',
@@ -266,7 +251,6 @@ router.post('/interview', async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/interview/session/:sessionId — get session state
 router.get('/interview/session/:sessionId', (req: Request, res: Response) => {
   const session = interviewEngine.getSession(req.params.sessionId);
   if (!session) {
@@ -275,7 +259,6 @@ router.get('/interview/session/:sessionId', (req: Request, res: Response) => {
   res.json({ success: true, data: session });
 });
 
-// GET /api/interview/report/:id — get interview report
 router.get('/interview/report/:id', async (req: Request, res: Response) => {
   const report = await interviewEngine.getReport(req.params.id);
   if (!report) {
@@ -285,7 +268,6 @@ router.get('/interview/report/:id', async (req: Request, res: Response) => {
   res.json({ success: true, data: { ...report, completedCount } });
 });
 
-// GET /api/breeth/memory/:identifier — Full Breeth Memory Entity for Developer Inspector
 router.get('/breeth/memory/:identifier', async (req: Request, res: Response) => {
   const { identifier } = req.params;
   let memory = await interviewEngine.memoryService.getMemory(identifier);
@@ -319,7 +301,6 @@ router.get('/breeth/memory/:identifier', async (req: Request, res: Response) => 
   });
 });
 
-// GET /api/interview/memory/:sessionId — Breeth memory for session
 router.get('/interview/memory/:sessionId', async (req: Request, res: Response) => {
   const memory = await interviewEngine.memoryService.getMemory(req.params.sessionId);
   if (!memory) {
@@ -328,13 +309,11 @@ router.get('/interview/memory/:sessionId', async (req: Request, res: Response) =
   res.json({ success: true, data: memory });
 });
 
-// GET /api/interview/timeline/:candidateId — Breeth learning timeline
 router.get('/interview/timeline/:candidateId', async (req: Request, res: Response) => {
   const timeline = await interviewEngine.memoryService.generateLearningTimeline(req.params.candidateId);
   res.json({ success: true, data: timeline });
 });
 
-// GET /api/health
 router.get('/health', (req: Request, res: Response) => {
   res.json({
     status: 'healthy',

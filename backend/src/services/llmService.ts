@@ -8,9 +8,6 @@ export class LLMService {
   private static readonly BASE_URL =
     'https://generativelanguage.googleapis.com/v1beta/models';
 
-  /**
-   * Standard text completion — used for feedback generation, summaries, etc.
-   */
   public static async generateCompletion(
     systemPrompt: string,
     userPrompt: string,
@@ -19,12 +16,6 @@ export class LLMService {
     return LLMService.callGemini(systemPrompt, userPrompt, maxTokens, undefined);
   }
 
-  /**
-   * Structured JSON completion — forces the model to emit a JSON object that
-   * strictly conforms to the provided JSON Schema (Gemini responseSchema).
-   * This is the SINGLE-CALL pattern used by the orchestration engine.
-   * No markdown fences, no prose — pure JSON object, always.
-   */
   public static async generateStructuredCompletion(
     systemPrompt: string,
     userPrompt: string,
