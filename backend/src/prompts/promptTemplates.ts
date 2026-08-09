@@ -126,16 +126,16 @@ Return ONLY valid JSON (no markdown fences, no explanation) with this exact stru
     const lines: string[] = [];
     if (cv.name) lines.push(`Name: ${cv.name}`);
     if (cv.email) lines.push(`Email: ${cv.email}`);
-    if (cv.education.length) lines.push(`Education: ${cv.education.join('; ')}`);
-    if (cv.programmingLanguages.length) lines.push(`Programming Languages: ${cv.programmingLanguages.join(', ')}`);
-    if (cv.frameworks.length) lines.push(`Frameworks/Libraries: ${cv.frameworks.join(', ')}`);
-    if (cv.tools.length) lines.push(`Tools/Platforms: ${cv.tools.join(', ')}`);
-    if (cv.skills.length) lines.push(`Skills: ${cv.skills.join(', ')}`);
-    if (cv.projects.length) lines.push(`Projects:\n${cv.projects.map(p => `  - ${p}`).join('\n')}`);
-    if (cv.internships.length) lines.push(`Internships:\n${cv.internships.map(i => `  - ${i}`).join('\n')}`);
-    if (cv.workExperience.length) lines.push(`Work Experience:\n${cv.workExperience.map(w => `  - ${w}`).join('\n')}`);
-    if (cv.certifications.length) lines.push(`Certifications: ${cv.certifications.join(', ')}`);
-    if (cv.achievements.length) lines.push(`Achievements: ${cv.achievements.join('; ')}`);
+    if (cv.education?.length) lines.push(`Education: ${cv.education.join('; ')}`);
+    if (cv.programmingLanguages?.length) lines.push(`Programming Languages: ${cv.programmingLanguages.join(', ')}`);
+    if (cv.frameworks?.length) lines.push(`Frameworks/Libraries: ${cv.frameworks.join(', ')}`);
+    if (cv.tools?.length) lines.push(`Tools/Platforms: ${cv.tools.join(', ')}`);
+    if (cv.skills?.length) lines.push(`Skills: ${cv.skills.join(', ')}`);
+    if (cv.projects?.length) lines.push(`Projects:\n${cv.projects.map(p => `  - ${p}`).join('\n')}`);
+    if (cv.internships?.length) lines.push(`Internships:\n${cv.internships.map(i => `  - ${i}`).join('\n')}`);
+    if (cv.workExperience?.length) lines.push(`Work Experience:\n${cv.workExperience.map(w => `  - ${w}`).join('\n')}`);
+    if (cv.certifications?.length) lines.push(`Certifications: ${cv.certifications.join(', ')}`);
+    if (cv.achievements?.length) lines.push(`Achievements: ${cv.achievements.join('; ')}`);
     return lines.join('\n');
   }
 
