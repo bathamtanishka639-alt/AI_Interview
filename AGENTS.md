@@ -28,6 +28,10 @@ This document defines the development rules, architectural memory guidelines, sa
 - **Decision**: Deduplicate candidate questions using exact match, Jaccard similarity (≥ 0.65), and opening phrase matching, triggering a single anti-repeat retry if duplicate detected.
 - **Reasoning**: Ensures varied, non-repetitive candidate experiences across multi-turn interviews.
 
+#### Decision 5: Real-Time Session Timing Protocol
+- **Decision**: Enforce a 30-minute global session limit (`GLOBAL_DURATION_SEC = 1800`), 3-minute per-question answer window (`QUESTION_DURATION_SEC = 180`), and 30-second initial typing window (`START_TYPING_WINDOW_SEC = 30`).
+- **Reasoning**: Accommodates 10 curriculum-grounded questions per session while preventing stalled sessions and allowing candidates time for detailed engineering responses.
+
 ---
 
 ## 2. Safety & Data Loss Prevention Protocol
