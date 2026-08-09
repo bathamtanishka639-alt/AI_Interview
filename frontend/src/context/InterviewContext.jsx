@@ -11,7 +11,6 @@ export function InterviewProvider({ children }) {
   const [sessionData, setSessionData] = useState(null);
   const [reportId, setReportId] = useState(null);
 
-  // Auto-sync candidate profile with backend server memory on mount
   useEffect(() => {
     try {
       localStorage.removeItem('ai_interview_cv_profile');
@@ -21,16 +20,6 @@ export function InterviewProvider({ children }) {
     } catch {
       // ignore
     }
-
-    // Fetch active candidate profile from backend server memory
-    fetch(`${API_BASE}/candidate`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && json.data) {
-          setCvProfile(json.data);
-        }
-      })
-      .catch(() => {});
   }, []);
 
   const resetInterview = () => {

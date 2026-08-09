@@ -82,7 +82,7 @@ export class CurriculumLoader {
 
     CurriculumLoader.candidateCache = {
       candidateId: 'cand-001',
-      name: 'Alex Mercer',
+      name: 'Candidate',
       email: 'alex.mercer@example.com',
       targetRole: 'Senior Full-Stack AI Engineer',
       progress: { currentDay: 12, totalDays: 30, completionPercentage: 40 },
