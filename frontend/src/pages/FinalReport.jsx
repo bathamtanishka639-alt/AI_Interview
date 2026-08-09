@@ -174,7 +174,7 @@ export default function FinalReport() {
             {[
               { label: 'Started',   value: formatTime12h(report.overview?.interviewStartedAt || report.createdAt) },
               { label: 'Ended',     value: formatTime12h(report.overview?.interviewEndedAt   || report.createdAt) },
-              { label: 'Duration',  value: formatDurationSec(report.overview?.interviewDurationSeconds || 600)   },
+              { label: 'Duration',  value: formatDurationSec(report.overview?.interviewDurationSeconds || 1800)   },
               { label: 'Questions', value: `${report.overview?.totalQuestions || report.transcriptSummary?.totalQuestions || 5} Total` },
             ].map(({ label, value }) => (
               <div key={label} className="p-3 rounded-[12px] bg-surface border border-border">

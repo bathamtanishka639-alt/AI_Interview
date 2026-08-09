@@ -205,7 +205,7 @@ export class InterviewEngine {
       session.interviewStartedAt || session.startTime
     ).getTime();
     const globalElapsedMs = now - sessionStartMs;
-    const isGlobalTimeExpired = globalElapsedMs >= 600000;
+    const isGlobalTimeExpired = globalElapsedMs >= 1800000;
 
     const hasMore =
       session.currentQuestionIndex < session.questions.length - 1 &&
@@ -343,7 +343,7 @@ export class InterviewEngine {
       const overview: InterviewReportOverview = {
         interviewStartedAt: session.interviewStartedAt || session.startTime,
         interviewEndedAt: session.interviewEndedAt || session.endTime!,
-        interviewDurationSeconds: session.interviewDurationSeconds || 600,
+        interviewDurationSeconds: session.interviewDurationSeconds || 1800,
         totalQuestions: timedLogs.length,
         answeredQuestions: answeredCount,
         timedOutQuestions: timedOutCount,
