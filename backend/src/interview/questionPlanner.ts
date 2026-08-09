@@ -2,14 +2,6 @@ import { CandidateProfile, DifficultyLevel, InterviewMode, Question } from '../m
 import { CurriculumLoader } from '../curriculum/curriculumLoader';
 
 export class QuestionPlanner {
-  /**
-   * Plans an interview question set grounded in both the candidate's CV and the
-   * 30-Day AI Engineer Curriculum.
-   *
-   * Enforces requirement A2: minimum 8 questions across at least 4 curriculum days.
-   * Enforces requirement A6: incorporates candidate learning progress & weak topics.
-   * Enforces requirement A7: grounds each question in explicit curriculum modules/days.
-   */
   public static planQuestions(
     cvProfile: CandidateProfile,
     mode: InterviewMode,
@@ -19,14 +11,9 @@ export class QuestionPlanner {
     const curriculum = CurriculumLoader.getCurriculum();
     const candidateData = CurriculumLoader.getCandidate();
 
-    // 1. Gather candidate CV anchors
     const cvAnchors = QuestionPlanner.getCvAnchors(cvProfile, mode);
-
-    // 2. Select 5 distinct curriculum days spanning at least 4 different modules
-    // Days: 3 (Mod 1), 8 (Mod 2), 14 (Mod 3), 20 (Mod 4), 26 (Mod 5)
     const curriculumDays = [3, 8, 14, 20, 26, 5, 11, 17, 23, 29];
 
-    // Target total count: minimum 8 questions (up to 10)
     const TARGET_COUNT = Math.max(8, Math.min(cvAnchors.length + candidateData.weakTopics.length, 10));
 
     for (let i = 0; i < TARGET_COUNT; i++) {
@@ -34,10 +21,8 @@ export class QuestionPlanner {
       const module = CurriculumLoader.getModuleForDay(day);
       const dayTopic = module ? module.keyTopics[i % module.keyTopics.length] : 'AI Engineering Core';
 
-      // Pick corresponding CV anchor if available, else generate curriculum anchor
       const anchor = cvAnchors[i] || QuestionPlanner.getFallbackAnchor(cvProfile, dayTopic);
 
-      // Check if candidate has a documented weak topic related to this day/area
       const matchingWeakness = candidateData.weakTopics.find(wt =>
         wt.toLowerCase().includes(dayTopic.toLowerCase()) ||
         (anchor.topic && wt.toLowerCase().includes(anchor.topic.toLowerCase()))

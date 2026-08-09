@@ -7,7 +7,6 @@ export class FeedbackGenerator {
     const cvProfile = session.cvProfile;
     const mode = session.interviewMode;
 
-    // Build transcript for LLM
     const transcript = session.messages
       .filter(m => m.role !== 'system')
       .map(m => `[${m.role.toUpperCase()}]: ${m.content}`)
@@ -56,14 +55,9 @@ RULES:
       }
     }
 
-    // Advanced Local Intelligence Fallback (Rigorous NLP Evaluation)
     return FeedbackGenerator.rigorousLocalFeedback(session);
   }
 
-  /**
-   * Rigorous local NLP evaluation engine that analyzes exact candidate answers,
-   * keyword matching against CV, vocabulary depth, evasiveness, and STAR format.
-   */
   private static rigorousLocalFeedback(session: InterviewSession): InterviewFeedback {
     const cv = session.cvProfile;
     const mode = session.interviewMode;
@@ -86,13 +80,11 @@ RULES:
       };
     }
 
-    // 1. Analyze text metrics across all candidate answers
     const allText = userMsgs.map(m => m.content).join(' ');
     const allWords = allText.toLowerCase().split(/\s+/).filter(Boolean);
     const totalWords = allWords.length;
     const avgWordsPerAnswer = totalWords / userMsgs.length;
 
-    // 2. Skill keyword matching against CV
     const cvKeywords = [
       ...(cv?.skills || []),
       ...(cv?.programmingLanguages || []),
@@ -102,11 +94,9 @@ RULES:
 
     const matchedKeywords = cvKeywords.filter(kw => allText.toLowerCase().includes(kw));
 
-    // 3. Technical depth & reasoning indicators
     const reasoningWords = ['because', 'architecture', 'tradeoff', 'optimization', 'performance', 'scaled', 'implemented', 'configured', 'async', 'database', 'latency', 'concurrency', 'pattern', 'designed', 'tested', 'refactored'];
     const matchedReasoning = reasoningWords.filter(w => allText.toLowerCase().includes(w));
 
-    // 4. Evasiveness & non-answer detection
     const evasivePhrases = ['don\'t know', 'dont know', 'not sure', 'idk', 'no idea', 'maybe', 'yes', 'no', 'ok', 'good', 'fine'];
     const evasiveCount = userMsgs.filter(m => {
       const txt = m.content.toLowerCase().trim();
@@ -115,21 +105,14 @@ RULES:
 
     const evasiveRatio = evasiveCount / userMsgs.length;
 
-    // 5. Rigorous scoring formula
     let baseScore = 40;
 
-    // Word count scaling (punishes single-line answers)
     if (avgWordsPerAnswer > 60) baseScore += 25;
     else if (avgWordsPerAnswer > 35) baseScore += 15;
     else if (avgWordsPerAnswer < 15) baseScore -= 15;
 
-    // Keyword matching bonus
     baseScore += Math.min(20, matchedKeywords.length * 4);
-
-    // Technical depth bonus
     baseScore += Math.min(15, matchedReasoning.length * 3);
-
-    // Evasiveness penalty
     baseScore -= Math.round(evasiveRatio * 35);
 
     const technicalScore = Math.min(95, Math.max(18, Math.round(baseScore)));
@@ -137,7 +120,6 @@ RULES:
     const problemSolvingScore = Math.min(95, Math.max(15, Math.round(baseScore * 0.85 + matchedReasoning.length * 4)));
     const confidenceScore = Math.min(95, Math.max(20, Math.round(75 - evasiveRatio * 45)));
 
-    // 6. Dynamic Strengths
     const strengths: string[] = [];
     if (matchedKeywords.length > 0) {
       strengths.push(`Demonstrated knowledge of CV technologies: ${matchedKeywords.slice(0, 3).join(', ')}.`);
@@ -152,7 +134,6 @@ RULES:
       strengths.push('Attempted to answer interview questions.');
     }
 
-    // 7. Dynamic Weaknesses
     const weaknesses: string[] = [];
     if (evasiveRatio > 0.3) {
       weaknesses.push(`Gave brief or evasive answers to ${evasiveCount} out of ${userMsgs.length} questions.`);
@@ -167,7 +148,6 @@ RULES:
       weaknesses.push('Could further elaborate on edge case handling and multi-node scalability.');
     }
 
-    // 8. Dynamic Misconceptions
     const misconceptions: string[] = [];
     if (evasiveRatio > 0.4) {
       misconceptions.push('Struggled to articulate hands-on experience for primary CV claims.');
@@ -176,7 +156,6 @@ RULES:
       misconceptions.push('Omitted architectural trade-offs and performance considerations.');
     }
 
-    // 9. Recommendations
     const recommendations: string[] = [
       `Practice explaining ${matchedKeywords[0] || cvKeywords[0] || 'technical projects'} using the STAR method (Situation, Task, Action, Result).`,
       'Include concrete metrics, design trade-offs, and failure recovery strategies in responses.'

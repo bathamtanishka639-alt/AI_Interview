@@ -55,9 +55,6 @@ export class MemoryService {
     return await this.client.setMemory(arg1, memoryEntity);
   }
 
-  /**
-   * Records a chronological interview timeline event in Breeth.
-   */
   public async recordTimelineEvent(
     sessionId: string,
     eventType: TimelineEvent['eventType'],
@@ -90,9 +87,6 @@ export class MemoryService {
     return memory;
   }
 
-  /**
-   * Stores WHY a conclusion/misconception was reached.
-   */
   public async storeReasoning(
     sessionId: string,
     questionId: string,
@@ -108,9 +102,6 @@ export class MemoryService {
     return updated;
   }
 
-  /**
-   * Updates candidate knowledge and applies Progressive Learning to resolve weaknesses.
-   */
   public async updateProgressiveBeliefs(
     sessionId: string,
     newStrength?: string,

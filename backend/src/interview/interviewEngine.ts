@@ -24,7 +24,6 @@ export class InterviewEngine {
   public memoryService: MemoryService = new MemoryService();
   private sessionList: string[] = [];
 
-  /** Per-session orchestration state (not serialized to session object) */
   private repetitionGuards: Map<string, RepetitionGuard> = new Map();
   private coverageTrackers: Map<string, CoverageTracker> = new Map();
 
@@ -38,17 +37,14 @@ export class InterviewEngine {
       : `cand-${Date.now()}`;
     const sessionId = `session-${Date.now()}`;
 
-    // Plan CV-grounded questions (0 API calls on setup)
     const questions: Question[] = QuestionPlanner.planQuestions(
       cvProfile,
       interviewMode,
       initialDifficulty
     );
 
-    // Initialize Breeth memory for session
     await this.memoryService.initializeSessionMemory(candidateId, sessionId);
 
-    // Query historical Breeth memory for candidate
     let breethMemory: InterviewSession['breethMemory'] = undefined;
     try {
       const pastMemories = await this.memoryService.queryCandidateMemory(candidateId);
@@ -96,16 +92,13 @@ export class InterviewEngine {
       breethMemory
     };
 
-    // Initialize RepetitionGuard with first question pre-registered
     const guard = new RepetitionGuard([firstQuestion.promptText]);
     this.repetitionGuards.set(sessionId, guard);
 
-    // Initialize CoverageTracker with full CV whitelist
     const tracker = new CoverageTracker(cvProfile, interviewMode);
     tracker.markCovered(firstQuestion.topic);
     this.coverageTrackers.set(sessionId, tracker);
 
-    // Build Breeth prompt context
     const breethPromptContext = await this.memoryService.buildPromptContext(sessionId);
     const systemPrompt = `${PromptTemplates.getSystemPrompt(
       cvProfile,
@@ -114,7 +107,6 @@ export class InterviewEngine {
     )}\n\n${breethPromptContext}`;
     ContextManager.appendMessage(session, 'system', systemPrompt);
 
-    // Present professional first question
     const firstName = cvProfile.name ? cvProfile.name.split(' ')[0] : 'there';
     let greeting = `Hello ${firstName}. I've reviewed your CV and I'll be focusing this interview on the projects and technologies you've worked with. Let's start with your experience in ${firstQuestion.cvGrounding || firstQuestion.topic}.\n\n${firstQuestion.promptText}`;
     if (breethMemory && breethMemory.weaknesses?.length) {
@@ -123,7 +115,6 @@ export class InterviewEngine {
 
     ContextManager.appendMessage(session, 'assistant', greeting);
 
-    // Record Timeline Events in Breeth
     await this.memoryService.recordTimelineEvent(
       sessionId,
       'question_asked',
@@ -166,7 +157,6 @@ export class InterviewEngine {
     const now = Date.now();
     const nowIso = new Date(now).toISOString();
 
-    // Ensure timedQuestions exists
     if (!session.timedQuestions) {
       session.timedQuestions = [];
     }
@@ -204,7 +194,6 @@ export class InterviewEngine {
 
     const wordCount = userMessage.trim().split(/\s+/).filter(Boolean).length;
 
-    // Record Candidate Answer in Breeth
     await this.memoryService.recordTimelineEvent(
       sessionId,
       'candidate_answer',
@@ -212,7 +201,6 @@ export class InterviewEngine {
       `Status: ${currentLog.status}, Words: ${wordCount}, Duration: ${durationSec}s`
     );
 
-    // 10-Minute Global Timer Hard Stop (600,000 ms)
     const sessionStartMs = new Date(
       session.interviewStartedAt || session.startTime
     ).getTime();
@@ -224,7 +212,6 @@ export class InterviewEngine {
       !isGlobalTimeExpired;
 
     if (hasMore) {
-      // ── Execute Orchestrated Turn ──────────────────────────────────────────
       const breethPromptContext = await this.memoryService.buildPromptContext(sessionId);
       const guard = this.repetitionGuards.get(sessionId);
       const tracker = this.coverageTrackers.get(sessionId);
@@ -237,13 +224,10 @@ export class InterviewEngine {
         guard
       );
 
-      // Register the new question in the repetition guard
       if (guard) guard.register(turnResult.question);
 
-      // Update coverage tracker
       if (tracker) {
         tracker.markCovered(turnResult.decision.topic);
-        // Log uncovered topics for session awareness
         const uncovered = tracker.getUncoveredTopics();
         if (uncovered.length > 0) {
           console.info(`[CoverageTracker] Uncovered CV topics: ${uncovered.slice(0, 3).join(', ')}`);
@@ -253,7 +237,6 @@ export class InterviewEngine {
       const oldDifficulty = session.difficulty;
       session.difficulty = turnResult.decision.difficulty;
 
-      // Store WHY Reasoning Memory in Breeth
       const whyExplanation = `Evaluated quality "${turnResult.evaluation.quality}" with technical depth Level ${turnResult.evaluation.technicalDepth}/5. Decision: ${turnResult.decision.type}. Source: ${turnResult.source}.`;
       await this.memoryService.storeReasoning(
         sessionId,
@@ -263,7 +246,6 @@ export class InterviewEngine {
         turnResult.fullResponseText
       );
 
-      // Apply Progressive Learning in Breeth
       if (turnResult.evaluation.strength) {
         await this.memoryService.updateProgressiveBeliefs(
           sessionId,
@@ -283,7 +265,6 @@ export class InterviewEngine {
         );
       }
 
-      // Record Evaluation & Difficulty Events in Breeth
       await this.memoryService.recordTimelineEvent(
         sessionId,
         'evaluation',
@@ -300,15 +281,12 @@ export class InterviewEngine {
         );
       }
 
-      // Advance question index
       session.currentQuestionIndex += 1;
       const nextQ = session.questions[session.currentQuestionIndex];
       session.questionsAsked.push(nextQ.promptText);
 
-      // Register planned next question with guard too (it's pre-planned)
       if (guard) guard.register(nextQ.promptText);
 
-      // Create new timed log for next question
       session.timedQuestions.push({
         questionId: nextQ.questionId,
         topic: nextQ.topic,
@@ -319,7 +297,6 @@ export class InterviewEngine {
         status: 'active'
       });
 
-      // Record Next Question Reasoning in Breeth
       await this.memoryService.recordTimelineEvent(
         sessionId,
         'next_question_reasoning',
@@ -341,20 +318,17 @@ export class InterviewEngine {
 
       return { reply, isCompleted: false, nextDifficulty: session.difficulty };
     } else {
-      // ── Final Answer or 10-Minute Hard Stop — Complete Interview ──────────
       session.status = 'completed';
       session.endTime = nowIso;
       session.interviewEndedAt = nowIso;
       session.interviewDurationSeconds = Math.round((now - sessionStartMs) / 1000);
 
-      // Clean up orchestration state
       this.repetitionGuards.delete(sessionId);
       this.coverageTrackers.delete(sessionId);
 
       const feedback = await FeedbackGenerator.generate(session);
       const reportId = `rep-${Date.now()}`;
 
-      // Build Overview Metadata
       const timedLogs = session.timedQuestions || [];
       const answeredCount = timedLogs.filter(q => q.status === 'answered').length;
       const timedOutCount = timedLogs.filter(q => q.status === 'timed_out').length;
@@ -384,7 +358,6 @@ export class InterviewEngine {
         }))
       };
 
-      // Persist completed evaluation memory to Breeth graph
       await this.memoryService.saveMemory(
         sessionId,
         session.candidateId,
@@ -474,7 +447,6 @@ export class InterviewEngine {
       }
     };
 
-    // Persist to Breeth
     await this.memoryService.saveMemory(
       session.sessionId,
       session.candidateId,
