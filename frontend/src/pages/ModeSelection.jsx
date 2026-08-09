@@ -41,7 +41,6 @@ export default function ModeSelection() {
   const { resolved, toggle } = useTheme();
   const [selected, setSelected] = useState(interviewMode || 'technical');
 
-  // Guard: if no CV, redirect back
   useEffect(() => {
     if (!cvProfile) {
       navigate('/');
@@ -58,7 +57,6 @@ export default function ModeSelection() {
 
   return (
     <div className="min-h-screen bg-surface text-text-primary transition-colors duration-200 antialiased">
-      {/* Header */}
       <header className="glass border-b border-border/60 sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
@@ -85,7 +83,6 @@ export default function ModeSelection() {
               {resolved === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
             </button>
 
-            {/* Candidate pill */}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-pill glass border border-border/60 text-xs font-semibold text-text-primary">
               <span className="w-2 h-2 rounded-full bg-signal-500 animate-pulse" />
               <span>{cvProfile.name}</span>
@@ -95,7 +92,6 @@ export default function ModeSelection() {
       </header>
 
       <main className="max-w-4xl mx-auto px-6 py-14">
-        {/* Header */}
         <div className="text-center mb-12">
           <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight text-text-primary mb-3">
             How do you want to be interviewed?
@@ -105,7 +101,6 @@ export default function ModeSelection() {
           </p>
         </div>
 
-        {/* Mode Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
           {MODES.map((mode) => {
             const isSelected = selected === mode.id;
@@ -123,7 +118,6 @@ export default function ModeSelection() {
                   }
                 `}
               >
-                {/* Selection Checkbox */}
                 <div className={`
                   absolute top-5 right-5 w-5 h-5 rounded-lg flex items-center justify-center transition-all
                   ${isSelected ? 'bg-gradient-to-br from-signal-500 to-agent-500 text-white shadow-glow' : 'border border-border bg-surface'}
@@ -140,7 +134,6 @@ export default function ModeSelection() {
 
                 <p className="text-xs text-text-secondary leading-relaxed mb-4">{mode.description}</p>
 
-                {/* Focus areas tags */}
                 <div className="flex flex-wrap gap-1.5">
                   {mode.focuses.map((f) => (
                     <span key={f} className="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-surface border border-border/60 text-text-secondary">
@@ -153,7 +146,6 @@ export default function ModeSelection() {
           })}
         </div>
 
-        {/* CTA Actions */}
         <div className="flex flex-col items-center gap-4">
           <button
             onClick={handleStart}

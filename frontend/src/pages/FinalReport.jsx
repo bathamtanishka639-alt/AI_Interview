@@ -24,7 +24,6 @@ function formatDurationSec(sec) {
   return `${m}m ${s.toString().padStart(2, '0')}s`;
 }
 
-/* Inline gradient text (score ring number) */
 const GRADIENT_TEXT_STYLE = {
   background: 'linear-gradient(135deg, #14E0B4 0%, #7C7FFB 100%)',
   WebkitBackgroundClip: 'text',
@@ -46,7 +45,6 @@ export default function FinalReport() {
     [targetId]
   );
 
-  /* ── Loading ─────────────────────────────────────────────────────── */
   if (isLoading) {
     return (
       <PageContainer title="Generating Report…">
@@ -59,7 +57,6 @@ export default function FinalReport() {
     );
   }
 
-  /* ── Error ───────────────────────────────────────────────────────── */
   if (isError || !report) {
     return (
       <PageContainer title="Evaluation Report">
@@ -103,7 +100,6 @@ export default function FinalReport() {
     >
       <div className="max-w-4xl mx-auto space-y-5 pb-12 antialiased">
 
-        {/* ── Session Selector Tabs ───────────────────────────────────── */}
         {completedList.length > 0 && (
           <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-border text-xs">
             <span className="font-mono text-text-secondary text-[11px] uppercase mr-2 shrink-0">Sessions:</span>
@@ -131,7 +127,6 @@ export default function FinalReport() {
           </div>
         )}
 
-        {/* ── Top Header Card — FLAT (data-dense) ────────────────────── */}
         <div className="rounded-card-lg bg-surface-raised border border-border p-6 shadow-raised flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-pill bg-[rgba(20,224,180,0.10)] border border-[rgba(20,224,180,0.25)] text-[#0BBFA0] dark:text-[#14E0B4] text-xs font-medium mb-3">
@@ -148,7 +143,6 @@ export default function FinalReport() {
 
           <div className="flex items-center gap-5">
             <div className="text-right">
-              {/* Spec: gradient on the score number itself */}
               <div className="font-mono text-4xl font-bold" style={GRADIENT_TEXT_STYLE}>
                 {overallScore}
                 <span className="text-sm font-normal text-text-secondary" style={{ WebkitTextFillColor: undefined, background: 'none', color: 'rgb(var(--text-secondary))' }}>
@@ -168,7 +162,6 @@ export default function FinalReport() {
           </div>
         </div>
 
-        {/* ── Interview Overview Grid — FLAT ─────────────────────────── */}
         <div className="rounded-card-lg bg-surface-raised border border-border p-6 shadow-subtle space-y-4">
           <div className="flex items-center justify-between border-b border-border/60 pb-3">
             <h3 className="text-xs font-mono uppercase tracking-wider text-[#7C7FFB] font-semibold">
@@ -191,7 +184,6 @@ export default function FinalReport() {
             ))}
           </div>
 
-          {/* Answer breakdown pills */}
           <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
             <span className="px-2.5 py-1 rounded-pill bg-[rgba(20,224,180,0.10)] border border-[rgba(20,224,180,0.25)] text-[#0BBFA0] dark:text-[#14E0B4] font-medium">
               Answered: {report.overview?.answeredQuestions ?? report.transcriptSummary?.totalQuestions ?? 0}
@@ -204,7 +196,6 @@ export default function FinalReport() {
             </span>
           </div>
 
-          {/* Question timing log */}
           {report.overview?.questionLogs?.length > 0 && (
             <div className="pt-4 border-t border-border/60 space-y-2">
               <p className="text-[11px] font-mono text-text-secondary uppercase">Question Timing Breakdown</p>
@@ -232,7 +223,6 @@ export default function FinalReport() {
           )}
         </div>
 
-        {/* ── Score Breakdown — FLAT, gradient bars ──────────────────── */}
         <div className="rounded-card-lg bg-surface-raised border border-border p-6 shadow-subtle space-y-4">
           <h3 className="text-xs font-mono uppercase tracking-wider text-text-secondary">Performance Breakdown</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -240,10 +230,9 @@ export default function FinalReport() {
               <div key={item.label} className="p-3.5 rounded-[14px] bg-surface border border-border space-y-2">
                 <div className="flex justify-between text-xs font-medium">
                   <span className="text-text-primary">{item.label}</span>
-                  <span className="font-mono text-text-primary font-bold">{item.score} / 100</span>
+                  <span className="font-mono text-[#14E0B4] font-bold">{item.score} / 100</span>
                 </div>
                 <div className="h-1.5 bg-border/50 rounded-pill overflow-hidden">
-                  {/* Spec: gradient fill on progress bars */}
                   <div
                     className="h-full rounded-pill"
                     style={{
@@ -258,7 +247,6 @@ export default function FinalReport() {
           </div>
         </div>
 
-        {/* ── Evidence Summary — FLAT ─────────────────────────────────── */}
         <div className="rounded-card-lg bg-surface-raised border border-border p-6 shadow-subtle">
           <p className="text-[11px] font-mono text-[#7C7FFB] uppercase tracking-wider mb-2">
             Evidence-Based Observations
@@ -271,7 +259,6 @@ export default function FinalReport() {
           </div>
         </div>
 
-        {/* ── Strengths & Improvements — FLAT ────────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div className="rounded-card-lg bg-surface-raised border border-border p-6 shadow-subtle">
             <p className="text-[11px] font-mono text-[#0BBFA0] dark:text-[#14E0B4] uppercase tracking-wider mb-3">
@@ -310,7 +297,6 @@ export default function FinalReport() {
           </div>
         </div>
 
-        {/* ── Breeth Memory — FLAT ───────────────────────────────────── */}
         <div className="rounded-card-lg bg-surface-raised border border-border p-6 shadow-subtle">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -329,7 +315,6 @@ export default function FinalReport() {
           </p>
         </div>
 
-        {/* ── CTAs ────────────────────────────────────────────────────── */}
         <div className="flex items-center gap-3 pt-2 border-t border-border/60 flex-wrap">
           <button
             onClick={() => {

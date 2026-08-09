@@ -6,7 +6,6 @@ import { interviewsService } from '../services';
 import { useToast } from '../hooks/useToast';
 import SignalPulse from '../components/ui/SignalPulse';
 
-/* ─── All constants/logic are UNCHANGED ──────────────────────────────────── */
 const MODE_LABELS = { technical: 'Technical', hr: 'HR', behavioral: 'Behavioral', mixed: 'Mixed' };
 const GLOBAL_DURATION_SEC   = 600;
 const QUESTION_DURATION_SEC = 120;
@@ -51,12 +50,10 @@ export default function InterviewScreen() {
 
   const isTransitioningRef = useRef(false);
 
-  /* ── Redirect guard ── */
   useEffect(() => {
     if (!cvProfile || !interviewMode) navigate('/');
   }, [cvProfile, interviewMode, navigate]);
 
-  /* ── Session init ── */
   useEffect(() => {
     if (!cvProfile || !interviewMode) return;
     initSession();
@@ -89,7 +86,6 @@ export default function InterviewScreen() {
     }
   };
 
-  /* ── Central clock (unchanged logic) ── */
   useEffect(() => {
     if (stage !== 'active' || !interviewStartedAtMs || !questionStartedAtMs) return;
     const interval = setInterval(() => {
@@ -103,7 +99,6 @@ export default function InterviewScreen() {
     return () => clearInterval(interval);
   }, [stage, interviewStartedAtMs, questionStartedAtMs]);
 
-  /* ── Input tracking (unchanged) ── */
   const handleInputChange = (e) => {
     const val = e.target.value;
     setInput(val);
@@ -113,7 +108,6 @@ export default function InterviewScreen() {
     }
   };
 
-  /* ── Submit turn (unchanged logic) ── */
   const executeTurnSubmit = useCallback(async (msgText, statusOverride = undefined) => {
     if (isTransitioningRef.current || !sessionId) return;
     isTransitioningRef.current = true;
@@ -153,7 +147,6 @@ export default function InterviewScreen() {
     }
   }, [sessionId, answerStartedAtIso, currentIndex, setReportId, toast]);
 
-  /* ── Timer rules (unchanged logic) ── */
   useEffect(() => {
     if (stage !== 'active' || isTransitioningRef.current) return;
     if (globalRemainingSec <= 0) {
@@ -176,27 +169,20 @@ export default function InterviewScreen() {
     }
   }, [stage, globalRemainingSec, questionElapsedSec, questionRemainingSec, hasTypedForCurrentQ, input, executeTurnSubmit, toast]);
 
-  /* ── Manual submit ── */
   const handleManualSubmit = (e) => {
     e?.preventDefault();
     if (!input.trim() || isAgentTyping || stage !== 'active') return;
     executeTurnSubmit(input.trim(), 'answered');
   };
 
-  /* ── Auto-scroll ── */
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, isAgentTyping]);
 
-  /* ══════════════════════════════════════════════════════════════════
-     LOADING STATE
-     Spec: glass card, SignalPulse spinner (NOT animate-spin Sparkles)
-  ══════════════════════════════════════════════════════════════════ */
   if (stage === 'loading') {
     return (
       <div className="min-h-screen bg-mesh flex items-center justify-center px-4">
         <div className="text-center p-10 rounded-[24px] glass border border-[rgba(15,20,30,0.06)] dark:border-[rgba(255,255,255,0.08)] shadow-raised max-w-sm w-full">
-          {/* Spec: use SignalPulse, NOT animate-spin on icons */}
           <div
             className="w-14 h-14 rounded-[18px] flex items-center justify-center mx-auto mb-5"
             style={{ background: 'linear-gradient(135deg, rgba(124,127,251,0.18) 0%, rgba(20,224,180,0.12) 100%)', border: '1px solid rgba(124,127,251,0.22)' }}
@@ -214,9 +200,6 @@ export default function InterviewScreen() {
     );
   }
 
-  /* ══════════════════════════════════════════════════════════════════
-     ERROR STATE
-  ══════════════════════════════════════════════════════════════════ */
   if (stage === 'error') {
     return (
       <div className="min-h-screen bg-mesh flex items-center justify-center px-4">
@@ -250,10 +233,6 @@ export default function InterviewScreen() {
     );
   }
 
-  /* ══════════════════════════════════════════════════════════════════
-     COMPLETED STATE
-     Spec: glass card, geometric checkmark badge (not big emoji)
-  ══════════════════════════════════════════════════════════════════ */
   if (stage === 'completed') {
     const totalDurationSec = interviewStartedAtMs ? Math.round((Date.now() - interviewStartedAtMs) / 1000) : 600;
     const durMin = Math.floor(totalDurationSec / 60);
@@ -262,7 +241,6 @@ export default function InterviewScreen() {
     return (
       <div className="min-h-screen bg-mesh flex items-center justify-center px-4">
         <div className="text-center max-w-md w-full p-10 rounded-[28px] glass border border-[rgba(15,20,30,0.06)] dark:border-[rgba(255,255,255,0.08)] shadow-raised">
-          {/* Spec: geometric badge — gradient ring, clean check icon */}
           <div
             className="w-20 h-20 rounded-[28px] flex items-center justify-center mx-auto mb-6"
             style={{
@@ -283,7 +261,6 @@ export default function InterviewScreen() {
             {MODE_LABELS[interviewMode]} · {durMin}m {durSec}s
           </p>
 
-          {/* Summary blurb — flat for legibility */}
           <div className="rounded-[14px] bg-surface-raised border border-border text-xs text-text-secondary mb-6 p-4 text-left leading-relaxed">
             Your timed responses have been evaluated into a complete evidence-based report. Ready to review.
           </div>
@@ -309,22 +286,6 @@ export default function InterviewScreen() {
     );
   }
 
-  /* ══════════════════════════════════════════════════════════════════
-     ACTIVE INTERVIEW
-     Spec:
-       - Header: glass surface, backdrop-blur
-       - Agent bubble: flat (bg-surface-raised), rounded corners, round tl
-       - Candidate bubble: gradient bg, text-white, round tr
-       - Typing indicator: SignalPulse (NOT animate-spin Sparkles)
-       - Input panel: glass, focus-within border-signal
-       - Submit: gradient button
-       - Timers: font-mono, coral for urgent
-  ══════════════════════════════════════════════════════════════════ */
-  const isGlobalWarning = globalRemainingSec <= 60;
-  const isGlobalUrgent  = globalRemainingSec <= 10;
-  const isQWarning      = questionRemainingSec <= 30;
-  const isQUrgent       = questionRemainingSec <= 10;
-
   const globalTimerColor = isGlobalUrgent  ? 'text-[#FF5C72]'
                          : isGlobalWarning ? 'text-[#E09800] dark:text-[#FFB020]'
                          : 'text-text-primary';
@@ -338,13 +299,10 @@ export default function InterviewScreen() {
   return (
     <div className="min-h-screen bg-surface flex flex-col antialiased">
 
-      {/* ── Header Bar — glass, backdrop-blur ──────────────────────────── */}
       <header className="glass border-b border-[rgba(15,20,30,0.06)] dark:border-[rgba(255,255,255,0.08)] sticky top-0 z-30 py-2.5 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3">
 
-          {/* Candidate identity */}
           <div className="flex items-center gap-3">
-            {/* Avatar — agent gradient */}
             <div
               className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs text-white shadow-subtle"
               style={{ background: 'linear-gradient(135deg, #7C7FFB 0%, #14E0B4 100%)' }}
@@ -461,9 +419,7 @@ export default function InterviewScreen() {
           )}
         </div>
 
-        {/* ── Input Panel ────────────────────────────────────────────────── */}
         <form onSubmit={handleManualSubmit} className="space-y-2">
-          {/* Status badge row */}
           <div className="flex items-center justify-between px-1 text-[11px] font-mono">
             {!hasTypedForCurrentQ ? (
               <span className="text-[#E09800] dark:text-[#FFB020] flex items-center gap-1">
@@ -479,7 +435,6 @@ export default function InterviewScreen() {
             <span className="hidden sm:inline text-text-secondary">Enter to submit</span>
           </div>
 
-          {/* Spec: input panel = glass, focus-within signal border */}
           <div className="relative rounded-[20px] glass border border-border/60 focus-within:border-[rgba(20,224,180,0.55)] transition-all shadow-raised p-3">
             <textarea
               value={input}
@@ -496,7 +451,6 @@ export default function InterviewScreen() {
               <span className="text-[10px] font-mono text-text-secondary pl-1">
                 {input.trim().length} chars
               </span>
-              {/* Spec: submit = gradient primary */}
               <button
                 type="submit"
                 disabled={!input.trim() || isAgentTyping || stage !== 'active'}
