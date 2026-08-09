@@ -286,6 +286,11 @@ export default function InterviewScreen() {
     );
   }
 
+  const isGlobalWarning = globalRemainingSec <= 60;
+  const isGlobalUrgent  = globalRemainingSec <= 10;
+  const isQWarning      = questionRemainingSec <= 30;
+  const isQUrgent       = questionRemainingSec <= 10;
+
   const globalTimerColor = isGlobalUrgent  ? 'text-[#FF5C72]'
                          : isGlobalWarning ? 'text-[#E09800] dark:text-[#FFB020]'
                          : 'text-text-primary';

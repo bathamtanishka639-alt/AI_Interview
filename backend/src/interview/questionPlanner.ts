@@ -56,8 +56,18 @@ export class QuestionPlanner {
   ): Array<{ topic: string; cvFact: string; keyPoints: string[] }> {
     const anchors: Array<{ topic: string; cvFact: string; keyPoints: string[] }> = [];
 
+    const projects = cvProfile.projects || [];
+    const programmingLanguages = cvProfile.programmingLanguages || [];
+    const frameworks = cvProfile.frameworks || [];
+    const tools = cvProfile.tools || [];
+    const education = cvProfile.education || [];
+    const internships = cvProfile.internships || [];
+    const workExperience = cvProfile.workExperience || [];
+    const achievements = cvProfile.achievements || [];
+    const skills = cvProfile.skills || [];
+
     if (mode === 'technical') {
-      cvProfile.projects.forEach(project => {
+      projects.forEach(project => {
         anchors.push({
           topic: 'Project Architecture',
           cvFact: project,
@@ -65,7 +75,7 @@ export class QuestionPlanner {
         });
       });
 
-      cvProfile.programmingLanguages.forEach(lang => {
+      programmingLanguages.forEach(lang => {
         anchors.push({
           topic: `${lang} Engineering`,
           cvFact: `${lang} listed as programming language`,
@@ -73,7 +83,7 @@ export class QuestionPlanner {
         });
       });
 
-      cvProfile.frameworks.forEach(fw => {
+      frameworks.forEach(fw => {
         anchors.push({
           topic: `${fw} Architecture`,
           cvFact: `${fw} listed as framework/library`,
@@ -81,7 +91,7 @@ export class QuestionPlanner {
         });
       });
 
-      cvProfile.tools.forEach(tool => {
+      tools.forEach(tool => {
         anchors.push({
           topic: `${tool} Infrastructure`,
           cvFact: `${tool} listed in tools`,
@@ -89,7 +99,7 @@ export class QuestionPlanner {
         });
       });
     } else if (mode === 'hr') {
-      cvProfile.education.forEach(edu => {
+      education.forEach(edu => {
         anchors.push({
           topic: 'Academic Foundation',
           cvFact: edu,
@@ -97,7 +107,7 @@ export class QuestionPlanner {
         });
       });
 
-      cvProfile.internships.forEach(intern => {
+      internships.forEach(intern => {
         anchors.push({
           topic: 'Internship Experience',
           cvFact: intern,
@@ -105,7 +115,7 @@ export class QuestionPlanner {
         });
       });
 
-      cvProfile.workExperience.forEach(work => {
+      workExperience.forEach(work => {
         anchors.push({
           topic: 'Work Experience & Impact',
           cvFact: work,
@@ -113,7 +123,7 @@ export class QuestionPlanner {
         });
       });
 
-      cvProfile.achievements.forEach(ach => {
+      achievements.forEach(ach => {
         anchors.push({
           topic: 'Professional Recognition',
           cvFact: ach,
@@ -122,9 +132,9 @@ export class QuestionPlanner {
       });
     } else if (mode === 'behavioral') {
       const experiences = [
-        ...cvProfile.projects.map(p => ({ fact: p, type: 'Project Experience' })),
-        ...cvProfile.workExperience.map(w => ({ fact: w, type: 'Professional Experience' })),
-        ...cvProfile.internships.map(i => ({ fact: i, type: 'Internship Role' }))
+        ...projects.map(p => ({ fact: p, type: 'Project Experience' })),
+        ...workExperience.map(w => ({ fact: w, type: 'Professional Experience' })),
+        ...internships.map(i => ({ fact: i, type: 'Internship Role' }))
       ];
 
       experiences.forEach((exp, idx) => {
@@ -135,40 +145,39 @@ export class QuestionPlanner {
         });
       });
     } else {
-      // Mixed mode
-      if (cvProfile.projects.length > 0) {
+      if (projects.length > 0) {
         anchors.push({
           topic: 'Technical Architecture',
-          cvFact: cvProfile.projects[0],
+          cvFact: projects[0],
           keyPoints: ['System design', 'Tech choices', 'Performance']
         });
       }
-      if (cvProfile.workExperience.length > 0 || cvProfile.internships.length > 0) {
-        const exp = cvProfile.workExperience[0] || cvProfile.internships[0];
+      if (workExperience.length > 0 || internships.length > 0) {
+        const exp = workExperience[0] || internships[0];
         anchors.push({
           topic: 'Professional Collaboration',
           cvFact: exp,
           keyPoints: ['Role impact', 'Teamwork', 'Deliverables']
         });
       }
-      if (cvProfile.programmingLanguages.length > 0) {
+      if (programmingLanguages.length > 0) {
         anchors.push({
-          topic: `${cvProfile.programmingLanguages[0]} Core Concepts`,
-          cvFact: cvProfile.programmingLanguages[0],
+          topic: `${programmingLanguages[0]} Core Concepts`,
+          cvFact: programmingLanguages[0],
           keyPoints: ['Language paradigms', 'Best practices']
         });
       }
-      if (cvProfile.education.length > 0) {
+      if (education.length > 0) {
         anchors.push({
           topic: 'Academic Background',
-          cvFact: cvProfile.education[0],
+          cvFact: education[0],
           keyPoints: ['Education background', 'Continuous learning']
         });
       }
     }
 
     if (anchors.length < 8) {
-      cvProfile.skills.forEach(skill => {
+      skills.forEach(skill => {
         anchors.push({
           topic: `Skill Proficiency: ${skill}`,
           cvFact: `${skill} listed as skill`,

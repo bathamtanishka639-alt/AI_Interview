@@ -59,25 +59,25 @@ export class CoverageTracker {
     const topics: string[] = [];
 
     if (mode === 'technical' || mode === 'mixed') {
-      cvProfile.projects.forEach(p => topics.push(p.substring(0, 60)));
-      cvProfile.programmingLanguages.forEach(l => topics.push(`${l} engineering`));
-      cvProfile.frameworks.forEach(f => topics.push(`${f} architecture`));
-      cvProfile.tools.forEach(t => topics.push(`${t} infrastructure`));
+      (cvProfile.projects || []).forEach(p => topics.push(p.substring(0, 60)));
+      (cvProfile.programmingLanguages || []).forEach(l => topics.push(`${l} engineering`));
+      (cvProfile.frameworks || []).forEach(f => topics.push(`${f} architecture`));
+      (cvProfile.tools || []).forEach(t => topics.push(`${t} infrastructure`));
     }
 
     if (mode === 'hr' || mode === 'mixed') {
-      cvProfile.education.forEach(e => topics.push(e.substring(0, 60)));
-      cvProfile.internships.forEach(i => topics.push(i.substring(0, 60)));
-      cvProfile.workExperience.forEach(w => topics.push(w.substring(0, 60)));
-      cvProfile.achievements.forEach(a => topics.push(a.substring(0, 60)));
+      (cvProfile.education || []).forEach(e => topics.push(e.substring(0, 60)));
+      (cvProfile.internships || []).forEach(i => topics.push(i.substring(0, 60)));
+      (cvProfile.workExperience || []).forEach(w => topics.push(w.substring(0, 60)));
+      (cvProfile.achievements || []).forEach(a => topics.push(a.substring(0, 60)));
     }
 
     if (mode === 'behavioral' || mode === 'mixed') {
-      cvProfile.projects.forEach(p => topics.push(`behavioral: ${p.substring(0, 50)}`));
-      cvProfile.workExperience.forEach(w => topics.push(`behavioral: ${w.substring(0, 50)}`));
+      (cvProfile.projects || []).forEach(p => topics.push(`behavioral: ${p.substring(0, 50)}`));
+      (cvProfile.workExperience || []).forEach(w => topics.push(`behavioral: ${w.substring(0, 50)}`));
     }
 
-    cvProfile.skills.forEach(s => topics.push(s));
+    (cvProfile.skills || []).forEach(s => topics.push(s));
 
     return [...new Set(topics)].filter(Boolean);
   }
