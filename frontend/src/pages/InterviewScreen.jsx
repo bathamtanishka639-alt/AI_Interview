@@ -7,9 +7,9 @@ import { useToast } from '../hooks/useToast';
 import SignalPulse from '../components/ui/SignalPulse';
 
 const MODE_LABELS = { technical: 'Technical', hr: 'HR', behavioral: 'Behavioral', mixed: 'Mixed' };
-const GLOBAL_DURATION_SEC   = 600;
-const QUESTION_DURATION_SEC = 120;
-const START_TYPING_WINDOW_SEC = 15;
+const GLOBAL_DURATION_SEC   = 1800;
+const QUESTION_DURATION_SEC = 180;
+const START_TYPING_WINDOW_SEC = 30;
 
 function formatTimeMinutes(seconds) {
   const m = Math.floor(seconds / 60);
@@ -151,7 +151,7 @@ export default function InterviewScreen() {
     if (stage !== 'active' || isTransitioningRef.current) return;
     if (globalRemainingSec <= 0) {
       const textToSubmit = input.trim();
-      toast.info('Your 10-minute interview time limit has concluded.');
+      toast.info('Your 30-minute interview time limit has concluded.');
       executeTurnSubmit(textToSubmit, textToSubmit.length > 0 ? 'timed_out' : 'not_attempted');
       return;
     }
@@ -234,7 +234,7 @@ export default function InterviewScreen() {
   }
 
   if (stage === 'completed') {
-    const totalDurationSec = interviewStartedAtMs ? Math.round((Date.now() - interviewStartedAtMs) / 1000) : 600;
+    const totalDurationSec = interviewStartedAtMs ? Math.round((Date.now() - interviewStartedAtMs) / 1000) : 1800;
     const durMin = Math.floor(totalDurationSec / 60);
     const durSec = totalDurationSec % 60;
 
@@ -429,12 +429,12 @@ export default function InterviewScreen() {
             {!hasTypedForCurrentQ ? (
               <span className="text-[#E09800] dark:text-[#FFB020] flex items-center gap-1">
                 <AlertTriangle size={11} />
-                Start typing within {Math.max(0, START_TYPING_WINDOW_SEC - questionElapsedSec)}s to open full 2-min window
+                Start typing within {Math.max(0, START_TYPING_WINDOW_SEC - questionElapsedSec)}s to open full 3-min window
               </span>
             ) : (
               <span className="text-[#0BBFA0] dark:text-[#14E0B4] font-medium flex items-center gap-1">
                 <CheckCircle2 size={11} />
-                Full 2-min window active — {formatTimeMinutes(questionRemainingSec)} remaining
+                Full 3-min window active — {formatTimeMinutes(questionRemainingSec)} remaining
               </span>
             )}
             <span className="hidden sm:inline text-text-secondary">Enter to submit</span>
