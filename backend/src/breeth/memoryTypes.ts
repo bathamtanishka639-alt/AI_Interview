@@ -11,7 +11,7 @@ export interface ReasoningLog {
   timestamp: string;
   questionId: string;
   concept: string;
-  whyExplanation: string; // Explains WHY a conclusion/misconception was reached
+  whyExplanation: string;
   followUpReason: string;
 }
 
@@ -20,7 +20,7 @@ export interface BreethMemoryEntity {
   sessionId: string;
   strengths: string[];
   weaknesses: string[];
-  resolvedWeaknesses: string[]; // Progressive learning: weaknesses resolved later in the interview
+  resolvedWeaknesses: string[];
   misconceptions: string[];
   confidenceScore: number;
   interviewerObservations: string[];

@@ -76,7 +76,6 @@ export class BreethClient {
         });
 
         if (searchRes.ok) {
-          // Success
         }
       } catch (err: any) {
         console.warn(`[BreethClient] Live API search warning: ${err.message}`);

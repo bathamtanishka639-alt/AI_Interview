@@ -1,9 +1,6 @@
 import { BreethMemoryEntity } from './memoryTypes';
 
 export class MemoryUpdater {
-  /**
-   * Updates candidate knowledge and applies Progressive Learning to resolve past weaknesses.
-   */
   public static updateCandidateKnowledge(
     memory: BreethMemoryEntity,
     newStrength?: string,
@@ -15,7 +12,6 @@ export class MemoryUpdater {
       if (!memory.strengths.includes(newStrength)) {
         memory.strengths.push(newStrength);
       }
-      // Progressive Learning: Check if this new strength resolves a previous weakness!
       const resolvedIndex = memory.weaknesses.findIndex(w =>
         w.toLowerCase().includes(newStrength.toLowerCase()) || newStrength.toLowerCase().includes(w.toLowerCase())
       );
@@ -24,7 +20,6 @@ export class MemoryUpdater {
         if (!memory.resolvedWeaknesses.includes(resolved)) {
           memory.resolvedWeaknesses.push(resolved);
         }
-        // Boost confidence score because candidate resolved a previous weakness
         memory.confidenceScore = Math.min(100, memory.confidenceScore + 10);
       }
     }
@@ -45,9 +40,6 @@ export class MemoryUpdater {
     return memory;
   }
 
-  /**
-   * Marks a specific weakness as resolved through progressive learning.
-   */
   public static resolveWeakness(memory: BreethMemoryEntity, weaknessTopic: string): BreethMemoryEntity {
     const idx = memory.weaknesses.findIndex(w => w.toLowerCase().includes(weaknessTopic.toLowerCase()));
     if (idx !== -1) {

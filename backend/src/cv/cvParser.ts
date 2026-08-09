@@ -2,10 +2,6 @@ import { CandidateProfile } from '../models/interfaces';
 import { LLMService } from '../services/llmService';
 
 export class CvParser {
-  /**
-   * Parses raw CV/resume text and extracts a structured CandidateProfile.
-   * Uses Gemini/LLM for intelligent extraction. Falls back to robust heuristic regex parsing.
-   */
   public static async parse(cvText: string): Promise<CandidateProfile> {
     if (!cvText || cvText.trim().length < 30) {
       throw new Error('CV text is too short or empty. Please upload a valid CV.');
@@ -70,7 +66,6 @@ Return this exact JSON structure:
       console.warn('[CvParser] External LLM parser fallback triggered:', err.message);
     }
 
-    // High-precision heuristic fallback engine
     return CvParser.heuristicExtract(cvText);
   }
 

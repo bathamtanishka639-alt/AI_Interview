@@ -6,9 +6,6 @@ export class CurriculumLoader {
   private static curriculumCache: Curriculum | null = null;
   private static candidateCache: Candidate | null = null;
 
-  /**
-   * Load the 30-Day AI Engineer Curriculum JSON
-   */
   public static getCurriculum(): Curriculum {
     if (CurriculumLoader.curriculumCache) {
       return CurriculumLoader.curriculumCache;
@@ -25,7 +22,6 @@ export class CurriculumLoader {
       console.warn('[CurriculumLoader] Failed to read curriculum.json:', err.message);
     }
 
-    // Fallback default curriculum
     CurriculumLoader.curriculumCache = {
       curriculumId: 'curr-ai-eng-30d',
       title: '30-Day AI Engineer Mastery Curriculum',
@@ -68,9 +64,6 @@ export class CurriculumLoader {
     return CurriculumLoader.curriculumCache;
   }
 
-  /**
-   * Load the Candidate profile data JSON
-   */
   public static getCandidate(): Candidate {
     if (CurriculumLoader.candidateCache) {
       return CurriculumLoader.candidateCache;
@@ -87,7 +80,6 @@ export class CurriculumLoader {
       console.warn('[CurriculumLoader] Failed to read candidate.json:', err.message);
     }
 
-    // Fallback default candidate
     CurriculumLoader.candidateCache = {
       candidateId: 'cand-001',
       name: 'Alex Mercer',
@@ -107,9 +99,6 @@ export class CurriculumLoader {
     return CurriculumLoader.candidateCache;
   }
 
-  /**
-   * Map curriculum day to module
-   */
   public static getModuleForDay(day: number): CurriculumModule | undefined {
     const curr = CurriculumLoader.getCurriculum();
     return curr.modules.find(m => m.days.includes(day));

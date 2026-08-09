@@ -1,9 +1,6 @@
 import { BreethMemoryEntity, ReasoningLog } from './memoryTypes';
 
 export class ReasoningStorage {
-  /**
-   * Stores explanatory reasoning explaining WHY a conclusion was reached.
-   */
   public static storeReasoning(
     memory: BreethMemoryEntity,
     questionId: string,
@@ -22,7 +19,6 @@ export class ReasoningStorage {
     memory.reasoningLogs.push(log);
     memory.followUpReasoning.push(`[${concept}]: ${whyExplanation} -> ${followUpReason}`);
 
-    // Maintain backwards compatibility with reasoningHistory
     memory.reasoningHistory.push({
       timestamp: log.timestamp,
       questionId,

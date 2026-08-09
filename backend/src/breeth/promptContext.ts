@@ -1,9 +1,6 @@
 import { BreethMemoryEntity } from './memoryTypes';
 
 export class PromptContextBuilder {
-  /**
-   * Builds comprehensive Breeth Adaptive Memory context for Gemini prompts.
-   */
   public static buildPromptContext(memory: BreethMemoryEntity): string {
     const recentReasoning = memory.reasoningLogs.slice(-2).map(r => `  - [${r.concept}]: WHY: ${r.whyExplanation}`).join('\n');
     const recentEvents = memory.timelineEvents.slice(-4).map(e => `  - [${e.eventType.toUpperCase()}]: ${e.details}`).join('\n');
