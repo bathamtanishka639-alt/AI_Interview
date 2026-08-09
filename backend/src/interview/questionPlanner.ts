@@ -30,9 +30,14 @@ export class QuestionPlanner {
 
       let questionText = '';
       if (matchingWeakness) {
-        questionText = `[Curriculum Day ${day} - ${module?.title || 'Core'}] Based on your background with "${anchor.cvFact}", let's address your growth focus in "${matchingWeakness}". How do you approach this technical challenge at ${difficulty} level?`;
+        const weaknessTemplates = [
+          `Based on your background with "${anchor.cvFact}", how do you address challenges in "${matchingWeakness}"?`,
+          `Given your experience in "${anchor.cvFact}", let me ask about your approach to "${matchingWeakness}". What strategies do you use?`,
+          `Building on your work with "${anchor.cvFact}", walk me through how you optimize or troubleshoot "${matchingWeakness}".`
+        ];
+        questionText = weaknessTemplates[i % weaknessTemplates.length];
       } else {
-        questionText = `[Curriculum Day ${day} - ${module?.title || 'Core'}] ` + QuestionPlanner.formatCvQuestion(anchor, mode, difficulty, dayTopic);
+        questionText = QuestionPlanner.formatCvQuestion(anchor, mode, difficulty, dayTopic, i);
       }
 
       questions.push({
@@ -205,18 +210,41 @@ export class QuestionPlanner {
     anchor: { topic: string; cvFact: string; keyPoints: string[] },
     mode: InterviewMode,
     difficulty: DifficultyLevel,
-    dayTopic?: string
+    dayTopic?: string,
+    qIndex: number = 0
   ): string {
     const factSnippet = anchor.cvFact.length > 100 ? `${anchor.cvFact.substring(0, 95)}…` : anchor.cvFact;
-    const topicRef = dayTopic ? ` (focusing on ${dayTopic})` : '';
+    const topicRef = dayTopic ? ` focusing on ${dayTopic}` : '';
 
     if (mode === 'technical') {
-      return `Looking at your experience with "${factSnippet}"${topicRef}, walk me through the key architectural decisions you made, the specific trade-offs involved, and how you ensured system reliability at ${difficulty} level.`;
+      const templates = [
+        `Looking at your work on "${factSnippet}", walk me through your key architectural choices${topicRef} and how you handled system trade-offs.`,
+        `In your implementation of "${factSnippet}", what was the most demanding engineering challenge${topicRef}, and how did you resolve it?`,
+        `Regarding your experience with "${factSnippet}", how did you structure data flow and handle edge cases or failure modes${topicRef}?`,
+        `Drawing from your experience with "${factSnippet}", what performance optimizations or technical patterns did you leverage${topicRef}?`
+      ];
+      return templates[qIndex % templates.length];
     } else if (mode === 'hr') {
-      return `Regarding "${factSnippet}"${topicRef}, what were your primary responsibilities, how did you collaborate with your team, and what was the key outcome of your work?`;
+      const templates = [
+        `Regarding your work on "${factSnippet}", what were your primary responsibilities and how did you collaborate with your team${topicRef}?`,
+        `Looking at "${factSnippet}", how did you prioritize tasks and communicate progress with stakeholders${topicRef}?`,
+        `Reflecting on your role in "${factSnippet}", what was the key outcome and what did you learn about project delivery${topicRef}?`
+      ];
+      return templates[qIndex % templates.length];
     } else if (mode === 'behavioral') {
-      return `Tell me about a specific technical challenge or team disagreement you faced while working on "${factSnippet}"${topicRef}. How did you navigate the situation and what did you learn?`;
+      const templates = [
+        `Tell me about a specific technical challenge or team disagreement you faced while working on "${factSnippet}"${topicRef}. How did you navigate it?`,
+        `Can you share a situation during "${factSnippet}" where requirements changed unexpectedly? How did you adapt your engineering approach?`,
+        `Describe a scenario in "${factSnippet}" where you had to take ownership of an ambiguous technical problem and drive it to completion.`
+      ];
+      return templates[qIndex % templates.length];
     }
-    return `Can you elaborate on your work with "${factSnippet}"${topicRef} and explain how that experience shaped your technical problem-solving approach?`;
+
+    const mixedTemplates = [
+      `Can you elaborate on your experience with "${factSnippet}"${topicRef} and how it shaped your technical problem-solving approach?`,
+      `In your project "${factSnippet}", what were the core technical requirements${topicRef} and how did you measure success?`,
+      `Looking back at "${factSnippet}", what was the most valuable technical insight you gained${topicRef}?`
+    ];
+    return mixedTemplates[qIndex % mixedTemplates.length];
   }
 }
