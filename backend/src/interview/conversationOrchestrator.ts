@@ -50,6 +50,30 @@ export class ConversationOrchestrator {
     const wordCount = trimmed.split(/\s+/).filter(Boolean).length;
     const questionsAskedCount = session.questionsAsked.length;
 
+    // Bug 3: Handling skipped or empty answers
+    if (!trimmed || trimmed === '[Question Not Attempted]' || wordCount === 0) {
+      return {
+        evaluation: {
+          quality: 'insufficient_evidence',
+          technicalDepth: 1,
+          communication: 1,
+          confidence: 1,
+          claimVerification: 'not_applicable',
+          contradictsCv: false
+        },
+        decision: {
+          type: 'NEW_TOPIC',
+          difficulty: session.difficulty,
+          topic: currentQuestion.topic,
+          reasoning: 'Candidate skipped or did not attempt the question.'
+        },
+        acknowledgement: "No worries — let's move to a different area.",
+        question: '',
+        fullResponseText: "No worries — let's move to a different area.",
+        source: 'local-fallback'
+      };
+    }
+
     const { systemPrompt, userPrompt } = ConversationOrchestrator.buildPrompts(
       session, trimmed, wordCount, currentQuestion, breethMemoryContext, coverageTracker, questionsAskedCount, null
     );
@@ -62,9 +86,15 @@ export class ConversationOrchestrator {
       if (llmRes.provider === 'gemini' && llmRes.content) {
         decision = JSON.parse(llmRes.content) as TurnDecision;
         source = 'gemini';
+      } else {
+        session.usedFallbackTurns = (session.usedFallbackTurns || 0) + 1;
+        session.lastFallbackReason = llmRes.error || 'Gemini provider returned local fallback';
+        console.warn(`[ConversationOrchestrator] Gemini call fallback: ${session.lastFallbackReason}`);
       }
     } catch (err: any) {
-      console.warn('[ConversationOrchestrator] Structured output parse error:', err.message);
+      session.usedFallbackTurns = (session.usedFallbackTurns || 0) + 1;
+      session.lastFallbackReason = err.message;
+      console.warn('[ConversationOrchestrator] Gemini call failed:', err.message);
     }
 
     if (decision && repetitionGuard && decision.question && repetitionGuard.isDuplicate(decision.question)) {
@@ -158,23 +188,20 @@ export class ConversationOrchestrator {
 
   private static applyHysteresis(session: InterviewSession, modelSuggestedDifficulty: DifficultyLevel): DifficultyLevel {
     const current = session.difficulty;
-    const currentRank = DIFFICULTY_ORDER[current] ?? 1;
-    const suggestedRank = DIFFICULTY_ORDER[modelSuggestedDifficulty] ?? 1;
-    const direction = Math.sign(suggestedRank - currentRank);
-    if (direction === 0) return current;
+    const history = session.evaluationMetrics?.technicalScores || [];
+    if (history.length < 2) return current;
 
-    const s = session as any;
-    if (!s._diffHysteresis) s._diffHysteresis = { direction: 0, count: 0 };
-    const hyst = s._diffHysteresis;
+    const recent = history.slice(-2);
+    const avgRecent = (recent[0] + recent[1]) / 2;
 
-    if (hyst.direction === direction) hyst.count += 1;
-    else { hyst.direction = direction; hyst.count = 1; }
+    const levels: DifficultyLevel[] = ['beginner', 'intermediate', 'advanced', 'expert'];
+    const currentIndex = levels.indexOf(current);
 
-    if (hyst.count >= ConversationOrchestrator.HYSTERESIS_THRESHOLD) {
-      const newRank = Math.max(0, Math.min(3, currentRank + direction));
-      const newDifficulty = Object.keys(DIFFICULTY_ORDER).find(k => DIFFICULTY_ORDER[k] === newRank) as DifficultyLevel;
-      hyst.count = 0;
-      return newDifficulty || current;
+    if (avgRecent >= 4.5 && currentIndex < levels.length - 1) {
+      return levels[currentIndex + 1];
+    }
+    if (avgRecent <= 1.5 && currentIndex > 0) {
+      return levels[currentIndex - 1];
     }
     return current;
   }
@@ -204,11 +231,12 @@ export class ConversationOrchestrator {
     difficulty: DifficultyLevel
   ): OrchestratedTurnResult {
     const isShort = wordCount < 15;
+    const topicLabel = currentQuestion.displayFact || currentQuestion.topic;
     const acknowledgement = isShort
-      ? `That's a brief response — I'd like a bit more detail on ${currentQuestion.topic}.`
-      : `That covers the main point on ${currentQuestion.topic}. Let's continue.`;
+      ? `That's a brief response — I'd like a bit more detail on ${topicLabel}.`
+      : `That covers the main point on ${topicLabel}. Let's continue.`;
     const question = isShort
-      ? `Could you go into more detail on your specific role in ${currentQuestion.cvGrounding || currentQuestion.topic}?`
+      ? `Could you go into more detail on ${topicLabel}?`
       : currentQuestion.promptText;
 
     return {
@@ -217,7 +245,7 @@ export class ConversationOrchestrator {
         technicalDepth: 2,
         communication: isShort ? 2 : 3,
         confidence: 3,
-        claimVerification: 'unverified',
+        claimVerification: 'not_applicable',
         contradictsCv: false
       },
       decision: {

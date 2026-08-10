@@ -1,6 +1,7 @@
 export interface LLMResponse {
   content: string;
   provider: 'gemini' | 'intelligent-local';
+  error?: string;
 }
 
 export class LLMService {
@@ -9,20 +10,54 @@ export class LLMService {
     'https://generativelanguage.googleapis.com/v1beta/models';
 
   public static async generateCompletion(
-    systemPrompt: string,
-    userPrompt: string,
+    systemPrompt: string | { systemPrompt: string; prompt?: string; userPrompt?: string; maxTokens?: number },
+    userPrompt?: string,
     maxTokens: number = 800
   ): Promise<LLMResponse> {
-    return LLMService.callGemini(systemPrompt, userPrompt, maxTokens, undefined);
+    let sys = '';
+    let usr = '';
+    let tokens = maxTokens;
+
+    if (typeof systemPrompt === 'object') {
+      sys = systemPrompt.systemPrompt || '';
+      usr = systemPrompt.userPrompt || systemPrompt.prompt || '';
+      tokens = systemPrompt.maxTokens || maxTokens;
+    } else {
+      sys = systemPrompt;
+      usr = userPrompt || '';
+    }
+
+    return LLMService.callGemini(sys, usr, tokens, undefined);
   }
 
   public static async generateStructuredCompletion(
-    systemPrompt: string,
-    userPrompt: string,
-    responseSchema: object,
+    systemPrompt: string | { systemPrompt: string; prompt?: string; userPrompt?: string; responseSchema?: object; maxTokens?: number },
+    userPrompt?: string | object,
+    responseSchema?: object | number,
     maxTokens: number = 800
   ): Promise<LLMResponse> {
-    return LLMService.callGemini(systemPrompt, userPrompt, maxTokens, responseSchema);
+    let sys = '';
+    let usr = '';
+    let schema: object | undefined = undefined;
+    let tokens = maxTokens;
+
+    if (typeof systemPrompt === 'object') {
+      sys = systemPrompt.systemPrompt || '';
+      usr = systemPrompt.userPrompt || systemPrompt.prompt || '';
+      schema = systemPrompt.responseSchema || (typeof userPrompt === 'object' ? userPrompt as object : undefined);
+      tokens = systemPrompt.maxTokens || maxTokens;
+    } else {
+      sys = systemPrompt;
+      usr = typeof userPrompt === 'string' ? userPrompt : '';
+      if (typeof responseSchema === 'object') {
+        schema = responseSchema;
+      }
+      if (typeof responseSchema === 'number') {
+        tokens = responseSchema;
+      }
+    }
+
+    return LLMService.callGemini(sys, usr, tokens, schema);
   }
 
   private static getApiKeys(): string[] {
@@ -47,7 +82,7 @@ export class LLMService {
   ): Promise<LLMResponse> {
     const keys = LLMService.getApiKeys();
     if (!keys.length) {
-      return { content: '', provider: 'intelligent-local' };
+      return { content: '', provider: 'intelligent-local', error: 'No Gemini API keys configured in process.env' };
     }
 
     const generationConfig: Record<string, any> = {
@@ -60,6 +95,8 @@ export class LLMService {
       generationConfig.responseMimeType = 'application/json';
       generationConfig.responseSchema = responseSchema;
     }
+
+    let lastErr = '';
 
     for (let i = 0; i < keys.length; i++) {
       const key = keys[i];
@@ -84,15 +121,15 @@ export class LLMService {
           if (text) return { content: text, provider: 'gemini' };
         } else {
           const errText = await response.text();
-          console.warn(
-            `[LLMService] Key #${i + 1} HTTP ${response.status}: ${errText.substring(0, 150)}`
-          );
+          lastErr = `Key #${i + 1} HTTP ${response.status}: ${errText.substring(0, 150)}`;
+          console.warn(`[LLMService] ${lastErr}`);
         }
       } catch (err: any) {
-        console.warn(`[LLMService] Key #${i + 1} request failed: ${err.message}`);
+        lastErr = `Key #${i + 1} request failed: ${err.message}`;
+        console.warn(`[LLMService] ${lastErr}`);
       }
     }
 
-    return { content: '', provider: 'intelligent-local' };
+    return { content: '', provider: 'intelligent-local', error: lastErr || 'All Gemini API keys failed' };
   }
 }
