@@ -32,7 +32,11 @@ router.post('/cv/parse', upload.single('cv'), async (req: Request, res: Response
 
     let rawText = '';
 
-    if (req.file.mimetype === 'application/pdf') {
+    const originalName = (req.file.originalname || '').toLowerCase();
+    const mimeType = (req.file.mimetype || '').toLowerCase();
+    const isPdf = mimeType.includes('pdf') || originalName.endsWith('.pdf');
+
+    if (isPdf) {
       const pdfData = await pdfParse(req.file.buffer);
       rawText = pdfData.text;
     } else {
