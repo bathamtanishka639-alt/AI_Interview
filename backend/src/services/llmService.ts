@@ -4,7 +4,7 @@ export interface LLMResponse {
 }
 
 export class LLMService {
-  private static readonly MODEL = 'gemini-2.0-flash';
+  private static readonly MODEL = 'gemini-3.5-flash-lite';
   private static readonly BASE_URL =
     'https://generativelanguage.googleapis.com/v1beta/models';
 
