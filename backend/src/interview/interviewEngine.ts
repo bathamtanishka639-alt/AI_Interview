@@ -207,9 +207,18 @@ export class InterviewEngine {
     const globalElapsedMs = now - sessionStartMs;
     const isGlobalTimeExpired = globalElapsedMs >= 1800000;
 
+    const timedLogs = session.timedQuestions || [];
+    const answeredCount = timedLogs.filter(q => q.status === 'answered' || q.status === 'timed_out' || q.status === 'not_attempted').length;
+
+    // Enforce 10 questions max, and conclude if at least 8 questions have been answered.
+    const maxQuestionsReached = session.currentQuestionIndex >= 9 || session.questionsAsked.length >= 10;
+    const minAnsweredReached = answeredCount >= 8;
+
     const hasMore =
-      session.currentQuestionIndex < session.questions.length - 1 &&
-      !isGlobalTimeExpired;
+      !maxQuestionsReached &&
+      !minAnsweredReached &&
+      !isGlobalTimeExpired &&
+      session.currentQuestionIndex < session.questions.length - 1;
 
     if (hasMore) {
       const breethPromptContext = await this.memoryService.buildPromptContext(sessionId);
