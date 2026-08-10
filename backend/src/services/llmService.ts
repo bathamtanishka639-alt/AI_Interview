@@ -67,7 +67,10 @@ export class LLMService {
         const endpoint = `${LLMService.BASE_URL}/${LLMService.MODEL}:generateContent?key=${key}`;
         const response = await fetch(endpoint, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': key
+          },
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: systemPrompt }] },
             contents: [{ parts: [{ text: userPrompt }] }],
