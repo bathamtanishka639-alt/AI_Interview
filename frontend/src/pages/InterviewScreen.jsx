@@ -345,41 +345,41 @@ export default function InterviewScreen() {
   return (
     <div className="min-h-screen bg-surface flex flex-col antialiased">
 
-      <header className="glass border-b border-[rgba(15,20,30,0.06)] dark:border-[rgba(255,255,255,0.08)] sticky top-0 z-30 py-2.5 px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <header className="glass border-b border-[rgba(15,20,30,0.06)] dark:border-[rgba(255,255,255,0.08)] sticky top-0 z-30 py-2 px-3 sm:px-6">
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-2">
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 min-w-0">
             <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs text-white shadow-subtle"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center font-bold text-xs text-white shadow-subtle flex-shrink-0"
               style={{ background: 'linear-gradient(135deg, #7C7FFB 0%, #14E0B4 100%)' }}
             >
               {cvProfile?.name?.[0]?.toUpperCase() || 'C'}
             </div>
-            <div>
-              <p className="text-xs font-semibold text-text-primary leading-none mb-0.5">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-text-primary leading-none mb-0.5 truncate max-w-[120px] sm:max-w-xs">
                 {cvProfile?.name || 'Candidate'}
               </p>
-              <p className="text-[10px] font-mono text-text-secondary">
-                {MODE_LABELS[interviewMode]} · Started {formatLocalStartTime(interviewStartedAtMs)}
+              <p className="text-[10px] font-mono text-text-secondary truncate">
+                {MODE_LABELS[interviewMode]}
               </p>
             </div>
           </div>
 
           {/* Timers */}
-          <div className="flex flex-wrap items-center gap-3 text-xs">
-            {/* Global 10-min timer */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-btn bg-surface border border-border min-h-[32px]">
-              <Clock size={13} className={globalClockColor} />
-              <span className="text-[11px] font-mono text-text-secondary hidden sm:inline">Interview:</span>
-              <span className={`font-mono font-bold text-[12px] ${globalTimerColor}`}>
+          <div className="flex items-center gap-2 text-xs flex-shrink-0">
+            {/* Global timer */}
+            <div className="flex items-center gap-1 px-2.5 py-1 rounded-btn bg-surface border border-border min-h-[30px]">
+              <Clock size={12} className={globalClockColor} />
+              <span className="text-[10px] font-mono text-text-secondary hidden sm:inline">Interview:</span>
+              <span className={`font-mono font-bold text-[11px] sm:text-[12px] ${globalTimerColor}`}>
                 {formatTimeMinutes(globalRemainingSec)}
               </span>
             </div>
 
             {/* Per-question timer */}
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-btn bg-surface border border-border min-h-[32px]">
+            <div className="flex items-center gap-1 px-2 py-1 rounded-btn bg-surface border border-border min-h-[30px]">
               <span className="text-[10px] font-mono text-text-secondary">Q:</span>
-              <span className={`font-mono font-semibold text-xs ${qTimerColor}`}>
+              <span className={`font-mono font-semibold text-[11px] sm:text-xs ${qTimerColor}`}>
                 {formatTimeMinutes(questionRemainingSec)}
               </span>
             </div>

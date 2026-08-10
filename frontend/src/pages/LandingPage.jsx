@@ -337,7 +337,7 @@ export default function LandingPage() {
                     <input
                       ref={fileInputRef}
                       type="file"
-                      accept=".pdf,.doc,.docx"
+                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                       className="hidden"
                       onChange={handleFileInput}
                     />
@@ -377,18 +377,30 @@ export default function LandingPage() {
                           <AlertCircle size={24} />
                         </div>
                         <p className="font-display text-base font-bold text-coral-500 mb-1">{error}</p>
-                        <p className="text-xs text-text-secondary">Click or drop a different file to try again</p>
+                        <p className="text-xs text-text-secondary">Tap or drop a different file to try again</p>
                       </div>
                     ) : (
                       <div className="py-4">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-agent-500/15 to-signal-500/10 border border-agent-500/20 flex items-center justify-center mx-auto mb-5 text-agent-500">
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-agent-500/15 to-signal-500/10 border border-agent-500/20 flex items-center justify-center mx-auto mb-4 text-agent-500">
                           <Upload size={24} />
                         </div>
-                        <h3 className="font-display text-xl font-bold text-text-primary mb-1.5">
-                          {uploadState === UPLOAD_STATES.DRAGGING ? 'Drop your CV here' : 'Drop your CV here or click to browse'}
+                        <h3 className="font-display text-xl font-bold text-text-primary mb-1">
+                          {uploadState === UPLOAD_STATES.DRAGGING ? 'Drop your CV here' : 'Upload your CV / Resume'}
                         </h3>
-                        <p className="text-sm text-text-secondary mb-4">PDF or DOCX format · up to 5MB</p>
-                        <p className="text-[11px] text-text-secondary/70 font-mono">
+                        <p className="text-xs text-text-secondary mb-4">PDF or DOCX format · Tap to choose file from phone</p>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            fileInputRef.current?.click();
+                          }}
+                          className="px-5 py-2.5 rounded-btn text-white text-xs font-bold shadow-glow mb-3 inline-flex items-center gap-2 min-h-[40px]"
+                          style={{ background: 'linear-gradient(135deg, #14E0B4 0%, #7C7FFB 100%)' }}
+                        >
+                          <Upload size={14} />
+                          Select CV File
+                        </button>
+                        <p className="text-[11px] text-text-secondary/70 font-mono block">
                           Your CV becomes the context for your interview.
                         </p>
                       </div>
