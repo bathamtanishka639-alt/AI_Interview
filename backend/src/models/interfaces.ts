@@ -111,6 +111,7 @@ export interface InterviewSession {
     technicalScores: number[];
     communicationScores: number[];
   };
+  usedFallbackTurns?: number;
 }
 
 export interface InterviewFeedback {
@@ -118,6 +119,8 @@ export interface InterviewFeedback {
   communicationScore: number;
   problemSolvingScore: number;
   confidenceScore: number;
+  cvClaimVerificationScore: number;
+  cvInconsistencies: string[];
   strengths: string[];
   weaknesses: string[];
   misconceptions: string[];

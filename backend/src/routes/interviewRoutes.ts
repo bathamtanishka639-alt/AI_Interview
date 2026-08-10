@@ -63,6 +63,44 @@ router.post('/cv/parse', upload.single('cv'), async (req: Request, res: Response
   }
 });
 
+router.post('/cv/ats', upload.single('cv'), async (req: Request, res: Response) => {
+  try {
+    const jobDescription = req.body?.jobDescription;
+    let cvProfile: CandidateProfile | null = null;
+
+    if (req.body?.cvProfile) {
+      cvProfile = typeof req.body.cvProfile === 'string' ? JSON.parse(req.body.cvProfile) : req.body.cvProfile;
+    } else if (req.file) {
+      const originalName = (req.file.originalname || '').toLowerCase();
+      const mimeType = (req.file.mimetype || '').toLowerCase();
+      const isPdf = mimeType.includes('pdf') || originalName.endsWith('.pdf');
+      let rawText = '';
+      if (isPdf) {
+        const pdfData = await pdfParse(req.file.buffer);
+        rawText = pdfData.text;
+      } else {
+        const result = await mammoth.extractRawText({ buffer: req.file.buffer });
+        rawText = result.value;
+      }
+      if (rawText && rawText.trim().length >= 30) {
+        cvProfile = await CvParser.parse(rawText);
+      }
+    }
+
+    if (!cvProfile) {
+      return res.status(400).json({ success: false, error: 'Please provide either a valid cvProfile object or upload a CV file.' });
+    }
+
+    const { AtsAnalyzer } = await import('../ats/atsAnalyzer');
+    const atsResult = await AtsAnalyzer.analyzeProfile(cvProfile, jobDescription);
+
+    return res.json({ success: true, data: atsResult });
+  } catch (err: any) {
+    console.error('[Route] /cv/ats error:', err.message);
+    return res.status(500).json({ success: false, error: err.message || 'ATS analysis failed.' });
+  }
+});
+
 // ========== INTERVIEW SESSIONS ==========
 
 router.get('/interviews', async (req: Request, res: Response) => {
