@@ -61,6 +61,7 @@ export interface Question {
   promptText: string;
   expectedKeyPoints: string[];
   cvGrounding?: string;
+  displayFact?: string;
   curriculumDay?: number;
   curriculumModule?: string;
 }
@@ -112,6 +113,7 @@ export interface InterviewSession {
     communicationScores: number[];
   };
   usedFallbackTurns?: number;
+  lastFallbackReason?: string;
 }
 
 export interface InterviewFeedback {
