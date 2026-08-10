@@ -1,250 +1,180 @@
 import { CandidateProfile, DifficultyLevel, InterviewMode, Question } from '../models/interfaces';
 import { CurriculumLoader } from '../curriculum/curriculumLoader';
 
+/**
+ * QuestionPlanner no longer writes the interview. It produces a ranked, CV-grounded
+ * topic plan that seeds the interview's scope (total questions, priority order,
+ * curriculum grounding) and generates ONLY the opening question — the one text the
+ * candidate actually sees verbatim. Every question after that is generated live by
+ * ConversationOrchestrator based on the candidate's real answers; this planner's job
+ * is to make sure the orchestrator always has a well-ordered, non-redundant list of
+ * CV topics to draw from, prioritized toward what matters most (weak topics first,
+ * then projects, then core skills).
+ */
+
+interface CvAnchor {
+  topic: string;
+  cvFact: string;
+  keyPoints: string[];
+  priority: number; // higher = should be covered earlier
+}
+
 export class QuestionPlanner {
   public static planQuestions(
     cvProfile: CandidateProfile,
     mode: InterviewMode,
     difficulty: DifficultyLevel
   ): Question[] {
-    const questions: Question[] = [];
-    const curriculum = CurriculumLoader.getCurriculum();
     const candidateData = CurriculumLoader.getCandidate();
+    const anchors = QuestionPlanner.getRankedCvAnchors(cvProfile, mode, candidateData.weakTopics);
 
-    const cvAnchors = QuestionPlanner.getCvAnchors(cvProfile, mode);
+    if (anchors.length === 0) {
+      // CV had nothing usable for this mode — fall back to a single generic
+      // CV-summary opener rather than crashing the interview.
+      return [QuestionPlanner.buildFallbackQuestion(cvProfile, mode, difficulty)];
+    }
+
+    // Bound the plan size: never fewer than 8 (spec minimum), never more than the
+    // number of genuinely distinct CV anchors we found, capped at 12 to keep the
+    // interview within a reasonable duration.
+    const targetCount = Math.max(8, Math.min(anchors.length, 12));
+
     const curriculumDays = [3, 8, 14, 20, 26, 5, 11, 17, 23, 29];
+    const plan: Question[] = [];
 
-    const TARGET_COUNT = Math.max(8, Math.min(cvAnchors.length + candidateData.weakTopics.length, 10));
-
-    for (let i = 0; i < TARGET_COUNT; i++) {
+    for (let i = 0; i < targetCount; i++) {
+      const anchor = anchors[i % anchors.length];
       const day = curriculumDays[i % curriculumDays.length];
       const module = CurriculumLoader.getModuleForDay(day);
-      const dayTopic = module ? module.keyTopics[i % module.keyTopics.length] : 'AI Engineering Core';
 
-      const anchor = cvAnchors[i] || QuestionPlanner.getFallbackAnchor(cvProfile, dayTopic);
-
-      const matchingWeakness = candidateData.weakTopics.find(wt =>
-        wt.toLowerCase().includes(dayTopic.toLowerCase()) ||
-        (anchor.topic && wt.toLowerCase().includes(anchor.topic.toLowerCase()))
-      ) || (i < candidateData.weakTopics.length ? candidateData.weakTopics[i] : undefined);
-
-      let questionText = '';
-      if (matchingWeakness) {
-        const weaknessTemplates = [
-          `Based on your background with "${anchor.cvFact}", how do you address challenges in "${matchingWeakness}"?`,
-          `Given your experience in "${anchor.cvFact}", let me ask about your approach to "${matchingWeakness}". What strategies do you use?`,
-          `Building on your work with "${anchor.cvFact}", walk me through how you optimize or troubleshoot "${matchingWeakness}".`
-        ];
-        questionText = weaknessTemplates[i % weaknessTemplates.length];
-      } else {
-        questionText = QuestionPlanner.formatCvQuestion(anchor, mode, difficulty, dayTopic, i);
-      }
-
-      questions.push({
-        questionId: `q-${mode}-d${day}-${i + 1}`,
-        topic: anchor.topic || dayTopic,
+      plan.push({
+        questionId: `q-${mode}-${i + 1}`,
+        topic: anchor.topic,
         difficulty,
-        promptText: questionText,
-        expectedKeyPoints: [...anchor.keyPoints, `Curriculum Day ${day} (${dayTopic})`],
+        // Only index 0's promptText is ever shown to the candidate (used as the
+        // interview's opening line in interviewEngine.startInterview). Every other
+        // slot's promptText is a fallback only used if the orchestrator's live
+        // Gemini call fails outright — so it must still be a real, usable question,
+        // not a placeholder string.
+        promptText:
+          i === 0
+            ? QuestionPlanner.buildOpeningQuestion(anchor, mode)
+            : QuestionPlanner.buildFallbackText(anchor, mode),
+        expectedKeyPoints: anchor.keyPoints,
         cvGrounding: anchor.cvFact,
         curriculumDay: day,
         curriculumModule: module?.title || 'AI Engineering'
       });
     }
 
-    return questions;
+    return plan;
   }
 
-  private static getCvAnchors(
-    cvProfile: CandidateProfile,
-    mode: InterviewMode
-  ): Array<{ topic: string; cvFact: string; keyPoints: string[] }> {
-    const anchors: Array<{ topic: string; cvFact: string; keyPoints: string[] }> = [];
-
-    const projects = cvProfile.projects || [];
-    const programmingLanguages = cvProfile.programmingLanguages || [];
-    const frameworks = cvProfile.frameworks || [];
-    const tools = cvProfile.tools || [];
-    const education = cvProfile.education || [];
-    const internships = cvProfile.internships || [];
-    const workExperience = cvProfile.workExperience || [];
-    const achievements = cvProfile.achievements || [];
-    const skills = cvProfile.skills || [];
-
-    if (mode === 'technical') {
-      projects.forEach(project => {
-        anchors.push({
-          topic: 'Project Architecture',
-          cvFact: project,
-          keyPoints: ['System design decisions', 'Tech stack choices', 'Scalability & concurrency', 'Performance bottlenecks']
-        });
-      });
-
-      programmingLanguages.forEach(lang => {
-        anchors.push({
-          topic: `${lang} Engineering`,
-          cvFact: `${lang} listed as programming language`,
-          keyPoints: [`Advanced ${lang} idioms`, 'Memory management', 'Asynchronous execution', 'Design patterns']
-        });
-      });
-
-      frameworks.forEach(fw => {
-        anchors.push({
-          topic: `${fw} Architecture`,
-          cvFact: `${fw} listed as framework/library`,
-          keyPoints: [`${fw} architecture`, 'State management & hooks', 'Optimization techniques', 'Production deployments']
-        });
-      });
-
-      tools.forEach(tool => {
-        anchors.push({
-          topic: `${tool} Infrastructure`,
-          cvFact: `${tool} listed in tools`,
-          keyPoints: [`${tool} setup & orchestration`, 'CI/CD pipeline integration', 'Monitoring & recovery']
-        });
-      });
-    } else if (mode === 'hr') {
-      education.forEach(edu => {
-        anchors.push({
-          topic: 'Academic Foundation',
-          cvFact: edu,
-          keyPoints: ['Key learnings', 'Coursework application', 'Academic projects']
-        });
-      });
-
-      internships.forEach(intern => {
-        anchors.push({
-          topic: 'Internship Experience',
-          cvFact: intern,
-          keyPoints: ['Role & responsibilities', 'Mentorship & collaboration', 'Key deliverables', 'Career growth']
-        });
-      });
-
-      workExperience.forEach(work => {
-        anchors.push({
-          topic: 'Work Experience & Impact',
-          cvFact: work,
-          keyPoints: ['Project ownership', 'Team cross-collaboration', 'Business impact delivered']
-        });
-      });
-
-      achievements.forEach(ach => {
-        anchors.push({
-          topic: 'Professional Recognition',
-          cvFact: ach,
-          keyPoints: ['Context of achievement', 'Initiative taken', 'Outcomes']
-        });
-      });
-    } else if (mode === 'behavioral') {
-      const experiences = [
-        ...projects.map(p => ({ fact: p, type: 'Project Experience' })),
-        ...workExperience.map(w => ({ fact: w, type: 'Professional Experience' })),
-        ...internships.map(i => ({ fact: i, type: 'Internship Role' }))
-      ];
-
-      experiences.forEach((exp, idx) => {
-        anchors.push({
-          topic: `Behavioral: ${exp.type} #${idx + 1}`,
-          cvFact: exp.fact,
-          keyPoints: ['STAR situation framework', 'Conflict resolution', 'Leadership & ownership', 'Lessons learned']
-        });
-      });
-    } else {
-      if (projects.length > 0) {
-        anchors.push({
-          topic: 'Technical Architecture',
-          cvFact: projects[0],
-          keyPoints: ['System design', 'Tech choices', 'Performance']
-        });
-      }
-      if (workExperience.length > 0 || internships.length > 0) {
-        const exp = workExperience[0] || internships[0];
-        anchors.push({
-          topic: 'Professional Collaboration',
-          cvFact: exp,
-          keyPoints: ['Role impact', 'Teamwork', 'Deliverables']
-        });
-      }
-      if (programmingLanguages.length > 0) {
-        anchors.push({
-          topic: `${programmingLanguages[0]} Core Concepts`,
-          cvFact: programmingLanguages[0],
-          keyPoints: ['Language paradigms', 'Best practices']
-        });
-      }
-      if (education.length > 0) {
-        anchors.push({
-          topic: 'Academic Background',
-          cvFact: education[0],
-          keyPoints: ['Education background', 'Continuous learning']
-        });
-      }
+  private static buildOpeningQuestion(anchor: CvAnchor, mode: InterviewMode): string {
+    if (mode === 'technical' || mode === 'mixed') {
+      return `You mentioned "${anchor.cvFact}" on your CV. Could you walk me through the overall architecture and the key technical decisions behind it?`;
     }
-
-    if (anchors.length < 8) {
-      skills.forEach(skill => {
-        anchors.push({
-          topic: `Skill Proficiency: ${skill}`,
-          cvFact: `${skill} listed as skill`,
-          keyPoints: [`Hands-on ${skill} experience`, 'Real-world application', 'Trade-offs']
-        });
-      });
+    if (mode === 'behavioral') {
+      return `You listed "${anchor.cvFact}" as part of your experience. Can you walk me through your specific role and what you were responsible for?`;
     }
-
-    return anchors;
+    return `I see "${anchor.cvFact}" on your CV. Could you tell me more about that experience and what you took away from it?`;
   }
 
-  private static getFallbackAnchor(
+  private static buildFallbackText(anchor: CvAnchor, mode: InterviewMode): string {
+    // Used only if Gemini is unreachable for an entire turn — needs to stand on
+    // its own as a coherent question, not read as a template.
+    if (mode === 'technical' || mode === 'mixed') {
+      return `Regarding "${anchor.cvFact}", what was the most significant technical challenge you had to solve, and how did you approach it?`;
+    }
+    if (mode === 'behavioral') {
+      return `Thinking about "${anchor.cvFact}", describe a moment where something didn't go as planned — how did you handle it?`;
+    }
+    return `Can you elaborate on "${anchor.cvFact}" and how it connects to the role you're interviewing for?`;
+  }
+
+  private static buildFallbackQuestion(
     cvProfile: CandidateProfile,
-    dayTopic: string
-  ): { topic: string; cvFact: string; keyPoints: string[] } {
-    const mainSkill = cvProfile.skills[0] || cvProfile.programmingLanguages[0] || 'Software Engineering';
+    mode: InterviewMode,
+    difficulty: DifficultyLevel
+  ): Question {
     return {
-      topic: `${dayTopic} in ${mainSkill}`,
-      cvFact: `${mainSkill} experience`,
-      keyPoints: [`Applying ${dayTopic}`, 'Architecture choices', 'Production readiness']
+      questionId: `q-${mode}-1`,
+      topic: 'General Background',
+      difficulty,
+      promptText: `Could you walk me through your background and the experience most relevant to this role, ${cvProfile.name || 'there'}?`,
+      expectedKeyPoints: ['Relevant experience', 'Clear communication'],
+      cvGrounding: 'General CV summary',
+      curriculumDay: undefined,
+      curriculumModule: 'AI Engineering'
     };
   }
 
-  private static formatCvQuestion(
-    anchor: { topic: string; cvFact: string; keyPoints: string[] },
+  /**
+   * Builds a priority-ranked, de-duplicated anchor list from real CV content.
+   * Weak topics (from CurriculumLoader candidate data) are ranked highest so the
+   * interview naturally gravitates toward areas that most need probing, without
+   * hardcoding that as a rigid "always ask weak topics first" rule — priority is
+   * a ranking signal for the planner, not a guarantee the orchestrator follows
+   * turn-by-turn (the orchestrator still decides dynamically based on answers).
+   */
+  private static getRankedCvAnchors(
+    cvProfile: CandidateProfile,
     mode: InterviewMode,
-    difficulty: DifficultyLevel,
-    dayTopic?: string,
-    qIndex: number = 0
-  ): string {
-    const factSnippet = anchor.cvFact.length > 100 ? `${anchor.cvFact.substring(0, 95)}…` : anchor.cvFact;
-    const topicRef = dayTopic ? ` focusing on ${dayTopic}` : '';
+    weakTopics: string[]
+  ): CvAnchor[] {
+    const anchors: CvAnchor[] = [];
+    const seenTopics = new Set<string>();
 
-    if (mode === 'technical') {
-      const templates = [
-        `Looking at your work on "${factSnippet}", walk me through your key architectural choices${topicRef} and how you handled system trade-offs.`,
-        `In your implementation of "${factSnippet}", what was the most demanding engineering challenge${topicRef}, and how did you resolve it?`,
-        `Regarding your experience with "${factSnippet}", how did you structure data flow and handle edge cases or failure modes${topicRef}?`,
-        `Drawing from your experience with "${factSnippet}", what performance optimizations or technical patterns did you leverage${topicRef}?`
-      ];
-      return templates[qIndex % templates.length];
-    } else if (mode === 'hr') {
-      const templates = [
-        `Regarding your work on "${factSnippet}", what were your primary responsibilities and how did you collaborate with your team${topicRef}?`,
-        `Looking at "${factSnippet}", how did you prioritize tasks and communicate progress with stakeholders${topicRef}?`,
-        `Reflecting on your role in "${factSnippet}", what was the key outcome and what did you learn about project delivery${topicRef}?`
-      ];
-      return templates[qIndex % templates.length];
-    } else if (mode === 'behavioral') {
-      const templates = [
-        `Tell me about a specific technical challenge or team disagreement you faced while working on "${factSnippet}"${topicRef}. How did you navigate it?`,
-        `Can you share a situation during "${factSnippet}" where requirements changed unexpectedly? How did you adapt your engineering approach?`,
-        `Describe a scenario in "${factSnippet}" where you had to take ownership of an ambiguous technical problem and drive it to completion.`
-      ];
-      return templates[qIndex % templates.length];
+    const push = (topic: string, cvFact: string, keyPoints: string[], priority: number) => {
+      const norm = topic.toLowerCase().trim();
+      if (seenTopics.has(norm) || !cvFact) return;
+      seenTopics.add(norm);
+      anchors.push({ topic, cvFact, keyPoints, priority });
+    };
+
+    const isWeak = (label: string) =>
+      weakTopics.some(wt => label.toLowerCase().includes(wt.toLowerCase()) || wt.toLowerCase().includes(label.toLowerCase()));
+
+    if (mode === 'technical' || mode === 'mixed') {
+      (cvProfile.projects || []).forEach(project => {
+        push('Project Architecture', project, [
+          'System design decisions', 'Tech stack choices', 'Scalability & concurrency', 'Performance bottlenecks'
+        ], isWeak(project) ? 10 : 8);
+      });
+      (cvProfile.programmingLanguages || []).forEach(lang => {
+        push(`${lang} Engineering`, `${lang} listed as a programming language`, [
+          `Advanced ${lang} idioms`, 'Memory/resource management', 'Asynchronous execution', 'Design patterns'
+        ], isWeak(lang) ? 9 : 6);
+      });
+      (cvProfile.frameworks || []).forEach(fw => {
+        push(`${fw} Architecture`, `${fw} listed as a framework/library`, [
+          `${fw} architecture`, 'State management', 'Optimization techniques', 'Production deployment'
+        ], isWeak(fw) ? 9 : 6);
+      });
+      (cvProfile.tools || []).forEach(tool => {
+        push(`${tool} Infrastructure`, `${tool} listed as a tool`, [
+          `${tool} setup & orchestration`, 'CI/CD integration', 'Monitoring & recovery'
+        ], isWeak(tool) ? 8 : 5);
+      });
     }
 
-    const mixedTemplates = [
-      `Can you elaborate on your experience with "${factSnippet}"${topicRef} and how it shaped your technical problem-solving approach?`,
-      `In your project "${factSnippet}", what were the core technical requirements${topicRef} and how did you measure success?`,
-      `Looking back at "${factSnippet}", what was the most valuable technical insight you gained${topicRef}?`
-    ];
-    return mixedTemplates[qIndex % mixedTemplates.length];
+    if (mode === 'hr' || mode === 'mixed') {
+      (cvProfile.workExperience || []).forEach(w => push('Work Experience', w, ['Role & responsibilities', 'Impact delivered', 'Career growth'], 7));
+      (cvProfile.internships || []).forEach(i => push('Internship Experience', i, ['Role & responsibilities', 'Mentorship & collaboration', 'Key deliverables'], 6));
+      (cvProfile.education || []).forEach(e => push('Academic Foundation', e, ['Key learnings', 'Coursework application'], 4));
+      (cvProfile.achievements || []).forEach(a => push('Achievement', a, ['Context', 'Impact', 'What it demonstrates'], 5));
+      (cvProfile.certifications || []).forEach(c => push('Certification', c, ['Depth of knowledge gained', 'Practical application'], 4));
+    }
+
+    if (mode === 'behavioral' || mode === 'mixed') {
+      (cvProfile.projects || []).forEach(p => push('Team Collaboration', p, ['Ownership', 'Conflict handling', 'Adaptability'], 6));
+      (cvProfile.workExperience || []).forEach(w => push('Workplace Behavior', w, ['Deadline pressure', 'Team dynamics', 'Decision-making'], 6));
+    }
+
+    if (anchors.length === 0) {
+      (cvProfile.skills || []).forEach(s => push(s, s, ['General understanding'], 3));
+    }
+
+    return anchors.sort((a, b) => b.priority - a.priority);
   }
 }

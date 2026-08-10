@@ -39,10 +39,12 @@ RULES:
               communicationScore: Math.min(100, Math.max(0, parsed.communicationScore)),
               problemSolvingScore: Math.min(100, Math.max(0, parsed.problemSolvingScore)),
               confidenceScore: Math.min(100, Math.max(0, parsed.confidenceScore)),
+              cvClaimVerificationScore: Math.min(100, Math.max(0, parsed.cvClaimVerificationScore ?? 80)),
+              cvInconsistencies: Array.isArray(parsed.cvInconsistencies) ? parsed.cvInconsistencies : [],
               strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
               weaknesses: Array.isArray(parsed.weaknesses) ? parsed.weaknesses : [],
               misconceptions: Array.isArray(parsed.misconceptions) ? parsed.misconceptions : [],
-              topicsCovered: Array.isArray(parsed.topicsCovered) ? parsed.topicsCovered : [],
+              topicsCovered: Array.isArray(parsed.topicsCovered) ? parsed.topicsCovered : (session.timedQuestions?.map(q => q.topic) || []),
               recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
               suggestedRevisions: Array.isArray(parsed.suggestedRevisions) ? parsed.suggestedRevisions : [],
               overallSummary: parsed.overallSummary || '',
@@ -69,10 +71,12 @@ RULES:
         communicationScore: 20,
         problemSolvingScore: 20,
         confidenceScore: 20,
+        cvClaimVerificationScore: 30,
+        cvInconsistencies: ['Candidate abandoned interview without answering'],
         strengths: ['Started session'],
         weaknesses: ['No answers provided during session'],
         misconceptions: ['Candidate abandoned interview without answering'],
-        topicsCovered: session.questions.map(q => q.topic),
+        topicsCovered: session.timedQuestions?.map(q => q.topic) || session.questions.map(q => q.topic),
         recommendations: ['Complete all questions to receive full evaluation'],
         suggestedRevisions: ['Interview preparation'],
         overallSummary: 'The candidate did not provide answers to the interview questions.',
@@ -165,15 +169,21 @@ RULES:
       ? `The candidate completed ${userMsgs.length} exchanges in '${mode}' mode. Responses were brief or evasive (avg ${Math.round(avgWordsPerAnswer)} words/answer), demonstrating limited technical depth for stated CV skills.`
       : `The candidate completed ${userMsgs.length} exchanges in '${mode}' mode with an average response length of ${Math.round(avgWordsPerAnswer)} words. Technical alignment score: ${technicalScore}/100.`;
 
+    const topicsCovered = session.timedQuestions && session.timedQuestions.length > 0
+      ? Array.from(new Set(session.timedQuestions.map(q => q.topic)))
+      : session.questions.map(q => q.topic);
+
     return {
       technicalScore,
       communicationScore,
       problemSolvingScore,
       confidenceScore,
+      cvClaimVerificationScore: Math.min(95, Math.max(30, Math.round(technicalScore * 0.9))),
+      cvInconsistencies: evasiveRatio > 0.4 ? ['Incomplete or evasive responses for CV skills'] : [],
       strengths,
       weaknesses,
       misconceptions,
-      topicsCovered: session.questions.map(q => q.topic),
+      topicsCovered,
       recommendations,
       suggestedRevisions: cvKeywords.slice(0, 3),
       overallSummary,

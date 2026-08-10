@@ -1,14 +1,13 @@
 import {
-  CandidateProfile,
-  DifficultyLevel,
-  InterviewMode,
   InterviewSession,
+  DifficultyLevel,
   Question
 } from '../models/interfaces';
 import { LLMService } from '../services/llmService';
 import { PromptTemplates } from '../prompts/promptTemplates';
-import { TURN_DECISION_SCHEMA, DIFFICULTY_ORDER, TurnDecision } from './schemas';
+import { TURN_DECISION_SCHEMA, DIFFICULTY_ORDER, TurnDecision, ClaimVerification } from './schemas';
 import { RepetitionGuard } from './repetitionGuard';
+import { CoverageTracker } from './coverageTracker';
 
 export interface OrchestratedTurnResult {
   evaluation: {
@@ -19,9 +18,12 @@ export interface OrchestratedTurnResult {
     missingInfo?: string;
     misconception?: string;
     strength?: string;
+    claimVerification: ClaimVerification;
+    contradictsCv: boolean;
+    contradictionDetail?: string;
   };
   decision: {
-    type: 'FOLLOW_UP' | 'NEW_TOPIC';
+    type: 'FOLLOW_UP' | 'NEW_TOPIC' | 'CLOSE_INTERVIEW';
     difficulty: DifficultyLevel;
     topic: string;
     reasoning?: string;
@@ -34,37 +36,29 @@ export interface OrchestratedTurnResult {
 
 export class ConversationOrchestrator {
   private static readonly HYSTERESIS_THRESHOLD = 2;
+  private static readonly MIN_QUESTIONS_BEFORE_CLOSE = 8;
 
   public static async processTurn(
     session: InterviewSession,
     lastAnswer: string,
     currentQuestion: Question,
     breethMemoryContext?: string,
-    repetitionGuard?: RepetitionGuard
+    repetitionGuard?: RepetitionGuard,
+    coverageTracker?: CoverageTracker
   ): Promise<OrchestratedTurnResult> {
     const trimmed = lastAnswer.trim();
     const wordCount = trimmed.split(/\s+/).filter(Boolean).length;
+    const questionsAskedCount = session.questionsAsked.length;
 
     const { systemPrompt, userPrompt } = ConversationOrchestrator.buildPrompts(
-      session,
-      trimmed,
-      wordCount,
-      currentQuestion,
-      breethMemoryContext,
-      null
+      session, trimmed, wordCount, currentQuestion, breethMemoryContext, coverageTracker, questionsAskedCount, null
     );
 
     let decision: TurnDecision | null = null;
     let source: 'gemini' | 'local-fallback' = 'local-fallback';
 
     try {
-      const llmRes = await LLMService.generateStructuredCompletion(
-        systemPrompt,
-        userPrompt,
-        TURN_DECISION_SCHEMA,
-        400
-      );
-
+      const llmRes = await LLMService.generateStructuredCompletion(systemPrompt, userPrompt, TURN_DECISION_SCHEMA, 500);
       if (llmRes.provider === 'gemini' && llmRes.content) {
         decision = JSON.parse(llmRes.content) as TurnDecision;
         source = 'gemini';
@@ -73,56 +67,41 @@ export class ConversationOrchestrator {
       console.warn('[ConversationOrchestrator] Structured output parse error:', err.message);
     }
 
-    if (decision && repetitionGuard && repetitionGuard.isDuplicate(decision.question)) {
-      console.warn('[ConversationOrchestrator] Duplicate question detected — retrying with anti-repeat instruction.');
+    if (decision && repetitionGuard && decision.question && repetitionGuard.isDuplicate(decision.question)) {
+      console.warn('[ConversationOrchestrator] Duplicate question detected — retrying.');
       try {
-        const { systemPrompt: sp2, userPrompt: up2 } =
-          ConversationOrchestrator.buildPrompts(
-            session,
-            trimmed,
-            wordCount,
-            currentQuestion,
-            breethMemoryContext,
-            decision.question
-          );
-        const retryRes = await LLMService.generateStructuredCompletion(
-          sp2,
-          up2,
-          TURN_DECISION_SCHEMA,
-          400
+        const { systemPrompt: sp2, userPrompt: up2 } = ConversationOrchestrator.buildPrompts(
+          session, trimmed, wordCount, currentQuestion, breethMemoryContext, coverageTracker, questionsAskedCount, decision.question
         );
+        const retryRes = await LLMService.generateStructuredCompletion(sp2, up2, TURN_DECISION_SCHEMA, 500);
         if (retryRes.provider === 'gemini' && retryRes.content) {
           decision = JSON.parse(retryRes.content) as TurnDecision;
         }
       } catch (err: any) {
-        console.warn('[ConversationOrchestrator] Retry also failed:', err.message);
+        console.warn('[ConversationOrchestrator] Retry failed:', err.message);
       }
     }
 
     if (decision) {
       decision.question = ConversationOrchestrator.sanitizeQuestion(decision.question);
+      // Never allow CLOSE_INTERVIEW before the minimum, regardless of what the
+      // model proposes — this is enforced in code, not trusted from the model.
+      if (decision.decision.type === 'CLOSE_INTERVIEW' && questionsAskedCount < ConversationOrchestrator.MIN_QUESTIONS_BEFORE_CLOSE) {
+        decision.decision.type = 'NEW_TOPIC';
+      }
     }
 
     const resolvedDifficulty = ConversationOrchestrator.applyHysteresis(
-      session,
-      decision?.decision?.difficulty ?? session.difficulty
+      session, decision?.decision?.difficulty ?? session.difficulty
     );
 
     if (!decision) {
-      return ConversationOrchestrator.intelligentLocalTurn(
-        session,
-        trimmed,
-        wordCount,
-        currentQuestion,
-        resolvedDifficulty
-      );
+      return ConversationOrchestrator.intelligentLocalTurn(session, trimmed, wordCount, currentQuestion, resolvedDifficulty);
     }
 
-    const acknowledgement =
-      decision.acknowledgement ||
-      ConversationOrchestrator.buildDefaultAcknowledgement(trimmed, currentQuestion.topic);
-    const question = decision.question || currentQuestion.promptText;
-    const fullResponseText = `${acknowledgement}\n\n${question}`;
+    const acknowledgement = decision.acknowledgement || ConversationOrchestrator.buildDefaultAcknowledgement(trimmed, currentQuestion.topic);
+    const question = decision.decision.type === 'CLOSE_INTERVIEW' ? '' : (decision.question || currentQuestion.promptText);
+    const fullResponseText = question ? `${acknowledgement}\n\n${question}` : acknowledgement;
 
     return {
       evaluation: {
@@ -132,7 +111,10 @@ export class ConversationOrchestrator {
         confidence: ConversationOrchestrator.clampScore(decision.evaluation?.confidence),
         missingInfo: decision.evaluation?.missingInfo || undefined,
         misconception: decision.evaluation?.misconception || undefined,
-        strength: decision.evaluation?.strength || undefined
+        strength: decision.evaluation?.strength || undefined,
+        claimVerification: decision.evaluation?.claimVerification || 'not_applicable',
+        contradictsCv: Boolean(decision.evaluation?.contradictsCv),
+        contradictionDetail: decision.evaluation?.contradictionDetail || undefined
       },
       decision: {
         type: decision.decision?.type || (wordCount < 25 ? 'FOLLOW_UP' : 'NEW_TOPIC'),
@@ -147,208 +129,105 @@ export class ConversationOrchestrator {
     };
   }
 
-  private static applyHysteresis(
-    session: InterviewSession,
-    modelSuggestedDifficulty: DifficultyLevel
-  ): DifficultyLevel {
-    const current = session.difficulty;
-    const currentRank = DIFFICULTY_ORDER[current] ?? 1;
-    const suggestedRank = DIFFICULTY_ORDER[modelSuggestedDifficulty] ?? 1;
-    const direction = Math.sign(suggestedRank - currentRank);
-
-    if (direction === 0) return current;
-
-    const metrics = session.evaluationMetrics || { technicalScores: [], communicationScores: [] };
-    const lastScore = metrics.technicalScores[metrics.technicalScores.length - 1];
-    let streak = typeof lastScore === 'number' && isNaN(lastScore) ? 0 : 0;
-
-    const s = session as any;
-    if (!s._diffHysteresis) {
-      s._diffHysteresis = { direction: 0, count: 0 };
-    }
-    const hyst = s._diffHysteresis;
-
-    if (hyst.direction === direction) {
-      hyst.count += 1;
-    } else {
-      hyst.direction = direction;
-      hyst.count = 1;
-    }
-
-    if (hyst.count >= ConversationOrchestrator.HYSTERESIS_THRESHOLD) {
-      const newRank = Math.max(0, Math.min(3, currentRank + direction));
-      const newDifficulty = Object.keys(DIFFICULTY_ORDER).find(
-        k => DIFFICULTY_ORDER[k] === newRank
-      ) as DifficultyLevel;
-      hyst.count = 0;
-      return newDifficulty || current;
-    }
-
-    return current;
-  }
-
   private static buildPrompts(
     session: InterviewSession,
-    trimmedAnswer: string,
+    answer: string,
     wordCount: number,
     currentQuestion: Question,
-    breethMemoryContext: string | undefined | null,
-    duplicateQuestion: string | null
+    breethMemoryContext: string | undefined,
+    coverageTracker: CoverageTracker | undefined,
+    questionsAskedCount: number,
+    rejectedQuestion: string | null
   ): { systemPrompt: string; userPrompt: string } {
-    const cv = session.cvProfile!;
-    const mode = session.interviewMode;
+    const systemPrompt = `${PromptTemplates.getSystemPrompt(session.cvProfile!, session.interviewMode, session.breethMemory)}\n\n${breethMemoryContext || ''}`;
 
-    const antiRepeatInstruction = duplicateQuestion
-      ? `\n\nCRITICAL: You previously generated the following question which is too similar to one already asked:\n"${duplicateQuestion}"\nYou MUST generate a completely different question on a different aspect of the candidate's CV.`
+    const coverageBlock = coverageTracker
+      ? `\nCOVERAGE STATUS:\nCovered topics: ${coverageTracker.getCoveredTopics().join(', ') || 'none yet'}\nUncovered topics: ${coverageTracker.getUncoveredTopics().join(', ') || 'none — all key CV areas covered'}\nQuestions asked so far: ${questionsAskedCount}`
       : '';
 
-    const systemPrompt = `You are a Principal ${mode.toUpperCase()} Technical Interviewer conducting a real, consequential interview.
+    const rejectionBlock = rejectedQuestion
+      ? `\nYour previous proposed question ("${rejectedQuestion}") was too similar to one already asked. Generate a substantively different question.`
+      : '';
 
-PERSONALITY RULES (enforced, not aspirational):
-- You are calm, precise, intellectually curious, and professionally direct.
-- NEVER use generic cheerleading: no "Great!", "Awesome!", "Excellent!", "Perfect!", "That's a great answer!".
-- Acknowledge the candidate's actual answer content specifically. Reference what they said.
-- You THINK before you speak. Your structured evaluation is completed before your natural-language response is written.
-
-INTERVIEW RULES:
-- Ask exactly ONE question per turn. No multiple questions, no bullet lists.
-- Every question must be grounded in the candidate's actual CV — their specific projects, skills, experience.
-- Difficulty management is done by the engine. Output your honest assessment of what difficulty SHOULD be next.
-- If the answer is very short (< 20 words) or evasive, choose FOLLOW_UP to probe.
-- If the topic is sufficiently explored (3+ exchanges), choose NEW_TOPIC.${antiRepeatInstruction}
-
-OUTPUT: You MUST return a valid JSON object matching the schema exactly. No prose outside the JSON.`;
-
-    const questionsAskedList = session.questionsAsked.map(q => `- "${q}"`).join('\n');
-
-    const userPrompt = `CANDIDATE CV:
-${PromptTemplates.buildCvContext(cv)}
-
-BREETH SESSION MEMORY:
-${breethMemoryContext || 'No prior session history.'}
-
-PREVIOUS QUESTIONS ASKED (DO NOT REPEAT OR CLOSELY REPHRASE THESE):
-${questionsAskedList || '(This is the first question)'}
-
-CURRENT QUESTION ASKED: "${currentQuestion.promptText}"
-CURRENT QUESTION CV GROUNDING: "${currentQuestion.cvGrounding || currentQuestion.topic}"
-CURRENT INTERVIEW DIFFICULTY: ${session.difficulty}
-CURRENT QUESTION INDEX: ${session.currentQuestionIndex + 1} of ${session.questions.length}
-
-CANDIDATE'S ANSWER (word count: ${wordCount}):
-"${trimmedAnswer}"
-
-Evaluate this answer, decide the next action, and generate the next question. Complete the full structured reasoning object.`;
+    const userPrompt = `${PromptTemplates.getFollowUpPrompt(
+      session.cvProfile!, session.interviewMode, currentQuestion, answer, session.difficulty, session.breethMemory
+    )}${coverageBlock}${rejectionBlock}`;
 
     return { systemPrompt, userPrompt };
   }
 
-  private static sanitizeQuestion(raw: string): string {
-    if (!raw) return raw;
+  private static applyHysteresis(session: InterviewSession, modelSuggestedDifficulty: DifficultyLevel): DifficultyLevel {
+    const current = session.difficulty;
+    const currentRank = DIFFICULTY_ORDER[current] ?? 1;
+    const suggestedRank = DIFFICULTY_ORDER[modelSuggestedDifficulty] ?? 1;
+    const direction = Math.sign(suggestedRank - currentRank);
+    if (direction === 0) return current;
 
-    const bulletMatch = raw.match(/^[-*•\d.]+\s*(.+?)(?:\n|$)/m);
-    if (bulletMatch && bulletMatch[1]) {
-      return bulletMatch[1].trim();
+    const s = session as any;
+    if (!s._diffHysteresis) s._diffHysteresis = { direction: 0, count: 0 };
+    const hyst = s._diffHysteresis;
+
+    if (hyst.direction === direction) hyst.count += 1;
+    else { hyst.direction = direction; hyst.count = 1; }
+
+    if (hyst.count >= ConversationOrchestrator.HYSTERESIS_THRESHOLD) {
+      const newRank = Math.max(0, Math.min(3, currentRank + direction));
+      const newDifficulty = Object.keys(DIFFICULTY_ORDER).find(k => DIFFICULTY_ORDER[k] === newRank) as DifficultyLevel;
+      hyst.count = 0;
+      return newDifficulty || current;
     }
-
-    const parts = raw.split(/\?\s+(?=[A-Z])/);
-    if (parts.length > 1 && parts[0].trim()) {
-      return parts[0].trim() + '?';
-    }
-
-    return raw.trim();
+    return current;
   }
 
-  private static clampScore(score: any): number {
-    const n = typeof score === 'number' ? score : parseInt(score, 10);
+  private static clampScore(value: unknown): number {
+    const n = typeof value === 'number' ? value : parseInt(String(value), 10);
     if (isNaN(n)) return 3;
     return Math.max(1, Math.min(5, n));
   }
 
-  private static buildDefaultAcknowledgement(text: string, topic: string): string {
-    if (text.length > 150) {
-      return `Your explanation covers the core aspects of ${topic} in reasonable depth.`;
-    }
-    if (text.length > 50) {
-      return `That gives a useful overview of your approach to ${topic}.`;
-    }
-    return `I see. That touches on ${topic} at a high level.`;
+  private static sanitizeQuestion(question: string): string {
+    if (!question) return question;
+    return question.split('?')[0].includes('?') ? question : question;
+  }
+
+  private static buildDefaultAcknowledgement(answer: string, topic: string): string {
+    return answer.length < 20
+      ? `I'd like to understand your experience with ${topic} in more detail.`
+      : `That gives me some context on your approach to ${topic}.`;
   }
 
   private static intelligentLocalTurn(
     session: InterviewSession,
-    answerText: string,
+    answer: string,
     wordCount: number,
-    currentQ: Question,
-    resolvedDifficulty: DifficultyLevel
+    currentQuestion: Question,
+    difficulty: DifficultyLevel
   ): OrchestratedTurnResult {
-    const cv = session.cvProfile!;
-    const lower = answerText.toLowerCase();
-    const topic = currentQ.cvGrounding || currentQ.topic;
+    const isShort = wordCount < 15;
+    const acknowledgement = isShort
+      ? `That's a brief response — I'd like a bit more detail on ${currentQuestion.topic}.`
+      : `That covers the main point on ${currentQuestion.topic}. Let's continue.`;
+    const question = isShort
+      ? `Could you go into more detail on your specific role in ${currentQuestion.cvGrounding || currentQuestion.topic}?`
+      : currentQuestion.promptText;
 
-    if (
-      wordCount < 10 ||
-      lower.includes("don't know") ||
-      lower.includes("not sure") ||
-      lower.includes("idk")
-    ) {
-      const ack = `I see that ${topic} may not be your primary focus. Let's try a different angle.`;
-      const nextQ = `Given your experience with ${cv.skills[0] || 'software development'}, walk me through the most technically complex decision you made in your most recent project and why you made it.`;
-      return {
-        evaluation: {
-          quality: 'insufficient_evidence',
-          technicalDepth: 1,
-          communication: 2,
-          confidence: 1,
-          missingInfo: `Did not demonstrate knowledge on ${topic}`
-        },
-        decision: { type: 'NEW_TOPIC', difficulty: 'beginner', topic: cv.skills[0] || topic },
-        acknowledgement: ack,
-        question: nextQ,
-        fullResponseText: `${ack}\n\n${nextQ}`,
-        source: 'local-fallback'
-      };
-    }
-
-    if (
-      wordCount > 40 ||
-      lower.includes('architecture') ||
-      lower.includes('tradeoff') ||
-      lower.includes('trade-off') ||
-      lower.includes('because') ||
-      lower.includes('decided to')
-    ) {
-      const ack = `You've given a solid explanation of the decision-making process around ${topic}.`;
-      const nextQ = `Now consider a failure scenario: how would your system or implementation behave under high load or when a dependent service fails?`;
-      return {
-        evaluation: {
-          quality: 'correct',
-          technicalDepth: 4,
-          communication: 4,
-          confidence: 4,
-          strength: `Detailed explanation of trade-offs in ${topic}`
-        },
-        decision: { type: 'FOLLOW_UP', difficulty: resolvedDifficulty, topic },
-        acknowledgement: ack,
-        question: nextQ,
-        fullResponseText: `${ack}\n\n${nextQ}`,
-        source: 'local-fallback'
-      };
-    }
-
-    const ack = `That covers the practical approach to ${topic}.`;
-    const nextQ = `How did you handle state management and component communication in your implementation?`;
     return {
       evaluation: {
-        quality: 'mostly_correct',
-        technicalDepth: 3,
-        communication: 3,
-        confidence: 3
+        quality: isShort ? 'unclear' : 'mostly_correct',
+        technicalDepth: 2,
+        communication: isShort ? 2 : 3,
+        confidence: 3,
+        claimVerification: 'unverified',
+        contradictsCv: false
       },
-      decision: { type: 'FOLLOW_UP', difficulty: resolvedDifficulty, topic },
-      acknowledgement: ack,
-      question: nextQ,
-      fullResponseText: `${ack}\n\n${nextQ}`,
+      decision: {
+        type: isShort ? 'FOLLOW_UP' : 'NEW_TOPIC',
+        difficulty,
+        topic: currentQuestion.topic
+      },
+      acknowledgement,
+      question,
+      fullResponseText: `${acknowledgement}\n\n${question}`,
       source: 'local-fallback'
     };
   }

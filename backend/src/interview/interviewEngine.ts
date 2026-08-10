@@ -221,8 +221,13 @@ export class InterviewEngine {
         userMessage,
         currentQ,
         breethPromptContext,
-        guard
+        guard,
+        tracker
       );
+
+      if (turnResult.source === 'local-fallback') {
+        session.usedFallbackTurns = (session.usedFallbackTurns || 0) + 1;
+      }
 
       if (guard) guard.register(turnResult.question);
 
