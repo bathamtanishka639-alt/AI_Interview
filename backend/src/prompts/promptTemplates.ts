@@ -118,6 +118,8 @@ Return ONLY valid JSON (no markdown fences, no explanation) with this exact stru
   "communicationScore": number 0-100,
   "problemSolvingScore": number 0-100,
   "confidenceScore": number 0-100,
+  "cvClaimVerificationScore": number 0-100,
+  "cvInconsistencies": ["string array of any direct conflicts between candidate statements and their CV"],
   "strengths": ["string array of specific observed strengths with examples from their answers"],
   "weaknesses": ["string array of specific gaps observed"],
   "misconceptions": ["string array of any technical misconceptions detected"],
