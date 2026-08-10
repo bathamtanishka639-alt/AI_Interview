@@ -56,6 +56,18 @@ export default function InterviewScreen() {
   }, [cvProfile, interviewMode, navigate]);
 
   useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (stage === 'active') {
+        e.preventDefault();
+        e.returnValue = 'An interview is currently in progress. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [stage]);
+
+  useEffect(() => {
     if (!cvProfile || !interviewMode) return;
     initSession();
   }, []);
@@ -64,6 +76,54 @@ export default function InterviewScreen() {
     setStage('loading');
     isTransitioningRef.current = false;
     try {
+      if (sessionId) {
+        try {
+          const session = await interviewsService.getSession(sessionId);
+          if (session) {
+            setSessionData(session);
+            const questions = session.questions || [];
+            setTotalQuestions(questions.length || 5);
+            setCurrentIndex(session.currentQuestionIndex || 0);
+
+            const now = Date.now();
+            const startMs = session.interviewStartedAt ? new Date(session.interviewStartedAt).getTime() : now;
+            setInterviewStartedAtMs(startMs);
+            setQuestionStartedAtMs(now);
+            setQuestionElapsedSec(0);
+            setQuestionRemainingSec(QUESTION_DURATION_SEC);
+            setAnswerStartedAtIso(null);
+            setHasTypedForCurrentQ(false);
+
+            const rebuilt = [];
+            const timedQ = session.timedQuestions || [];
+            timedQ.forEach((q, idx) => {
+              if (q.promptText) {
+                rebuilt.push({ id: `msg-agent-${idx}`, role: 'agent', text: q.promptText });
+              }
+              if (q.candidateResponse) {
+                rebuilt.push({ id: `msg-cand-${idx}`, role: 'candidate', text: q.candidateResponse });
+              } else if (q.status === 'not_attempted' || q.status === 'timed_out') {
+                rebuilt.push({ id: `msg-sys-${idx}`, role: 'system_notice', text: '[Question Not Attempted / Timed Out]' });
+              }
+            });
+
+            if (rebuilt.length > 0) {
+              setMessages(rebuilt);
+            }
+
+            if (session.status === 'completed') {
+              setReportId(sessionId);
+              setStage('completed');
+            } else {
+              setStage('active');
+            }
+            return;
+          }
+        } catch (err) {
+          console.warn('[InterviewScreen] Could not recover session, starting new session:', err);
+        }
+      }
+
       const data = await interviewsService.startInterview(cvProfile, interviewMode);
       setSessionId(data.sessionId);
       setSessionData(data);
