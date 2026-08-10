@@ -63,27 +63,51 @@ router.post('/cv/parse', upload.single('cv'), async (req: Request, res: Response
   }
 });
 
+router.post('/ats/analyze', async (req: Request, res: Response) => {
+  try {
+    const { cvText, jobDescription } = req.body || {};
+    if (!cvText || typeof cvText !== 'string' || cvText.trim().length < 30) {
+      return res.status(400).json({ error: 'cvText is required and must contain substantial CV content.' });
+    }
+
+    const cvProfile = await CvParser.parse(cvText);
+    const { AtsAnalyzer } = await import('../ats/atsAnalyzer');
+
+    const result = AtsAnalyzer.analyze({
+      cvProfile,
+      rawCvText: cvText,
+      jobDescription: typeof jobDescription === 'string' ? jobDescription : undefined
+    });
+
+    return res.status(200).json(result);
+  } catch (err: any) {
+    console.error('[Route] POST /ats/analyze error:', err.message);
+    return res.status(500).json({ error: 'ATS analysis failed.' });
+  }
+});
+
 router.post('/cv/ats', upload.single('cv'), async (req: Request, res: Response) => {
   try {
     const jobDescription = req.body?.jobDescription;
     let cvProfile: CandidateProfile | null = null;
+    let rawCvText = '';
 
     if (req.body?.cvProfile) {
       cvProfile = typeof req.body.cvProfile === 'string' ? JSON.parse(req.body.cvProfile) : req.body.cvProfile;
+      rawCvText = req.body?.cvText || JSON.stringify(cvProfile);
     } else if (req.file) {
       const originalName = (req.file.originalname || '').toLowerCase();
       const mimeType = (req.file.mimetype || '').toLowerCase();
       const isPdf = mimeType.includes('pdf') || originalName.endsWith('.pdf');
-      let rawText = '';
       if (isPdf) {
         const pdfData = await pdfParse(req.file.buffer);
-        rawText = pdfData.text;
+        rawCvText = pdfData.text;
       } else {
         const result = await mammoth.extractRawText({ buffer: req.file.buffer });
-        rawText = result.value;
+        rawCvText = result.value;
       }
-      if (rawText && rawText.trim().length >= 30) {
-        cvProfile = await CvParser.parse(rawText);
+      if (rawCvText && rawCvText.trim().length >= 30) {
+        cvProfile = await CvParser.parse(rawCvText);
       }
     }
 
@@ -92,7 +116,11 @@ router.post('/cv/ats', upload.single('cv'), async (req: Request, res: Response) 
     }
 
     const { AtsAnalyzer } = await import('../ats/atsAnalyzer');
-    const atsResult = await AtsAnalyzer.analyzeProfile(cvProfile, jobDescription);
+    const atsResult = AtsAnalyzer.analyze({
+      cvProfile,
+      rawCvText,
+      jobDescription: typeof jobDescription === 'string' ? jobDescription : undefined
+    });
 
     return res.json({ success: true, data: atsResult });
   } catch (err: any) {

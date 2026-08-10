@@ -141,13 +141,16 @@ async function runScenarioTest(
 
   // Run ATS Analysis
   console.log(`\n--- Running ATS Analysis ---`);
-  const atsResult = await AtsAnalyzer.analyzeProfile(profile, targetJobDescription);
+  const atsResult = AtsAnalyzer.analyze({
+    cvProfile: profile,
+    rawCvText: `${profile.name} ${profile.skills.join(' ')} ${(profile.projects || []).join(' ')} ${(profile.workExperience || []).join(' ')}`,
+    jobDescription: targetJobDescription
+  });
   console.log(`[ATS Analysis Result]:`);
-  console.log(`  - Score: ${atsResult.overallAtsScore}/100 (Grade: ${atsResult.grade})`);
+  console.log(`  - Overall Score: ${atsResult.overallScore}/100`);
   console.log(`  - Label: "${atsResult.label}"`);
-  console.log(`  - Matched Keywords:`, atsResult.detectedKeywords);
-  console.log(`  - Missing Keywords:`, atsResult.missingKeywords);
-  console.log(`  - Breakdown:`, atsResult.breakdown);
+  console.log(`  - Summary: ${atsResult.summary}`);
+  console.log(`  - Components:`, atsResult.components.map(c => `${c.label}: ${c.score}/100 (Weight: ${c.weight})`));
 
   return {
     scenarioName,
@@ -155,8 +158,8 @@ async function runScenarioTest(
     finalTechnicalScore: report?.feedback.technicalScore,
     cvClaimScore: report?.feedback.cvClaimVerificationScore,
     inconsistenciesCount: report?.feedback.cvInconsistencies?.length || 0,
-    atsScore: atsResult.overallAtsScore,
-    atsGrade: atsResult.grade,
+    atsScore: atsResult.overallScore,
+    atsLabel: atsResult.label,
     turnsData
   };
 }
@@ -180,7 +183,7 @@ async function main() {
       TechScore: `${r1.finalTechnicalScore}/100`,
       ClaimScore: `${r1.cvClaimScore}/100`,
       Inconsistencies: r1.inconsistenciesCount,
-      AtsScore: `${r1.atsScore}/100 (${r1.atsGrade})`
+      AtsScore: `${r1.atsScore}/100`
     },
     {
       Scenario: r2.scenarioName,
@@ -188,7 +191,7 @@ async function main() {
       TechScore: `${r2.finalTechnicalScore}/100`,
       ClaimScore: `${r2.cvClaimScore}/100`,
       Inconsistencies: r2.inconsistenciesCount,
-      AtsScore: `${r2.atsScore}/100 (${r2.atsGrade})`
+      AtsScore: `${r2.atsScore}/100`
     },
     {
       Scenario: r3.scenarioName,
@@ -196,7 +199,7 @@ async function main() {
       TechScore: `${r3.finalTechnicalScore}/100`,
       ClaimScore: `${r3.cvClaimScore}/100`,
       Inconsistencies: r3.inconsistenciesCount,
-      AtsScore: `${r3.atsScore}/100 (${r3.atsGrade})`
+      AtsScore: `${r3.atsScore}/100`
     }
   ]);
 
