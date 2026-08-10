@@ -22,7 +22,7 @@ export class QuestionPlanner {
       return [QuestionPlanner.buildFallbackQuestion(cvProfile, mode, difficulty)];
     }
 
-    const targetCount = Math.max(8, Math.min(anchors.length, 12));
+    const targetCount = Math.max(8, Math.min(anchors.length, 10));
     const curriculumDays = [3, 8, 14, 20, 26, 5, 11, 17, 23, 29];
     const plan: Question[] = [];
 

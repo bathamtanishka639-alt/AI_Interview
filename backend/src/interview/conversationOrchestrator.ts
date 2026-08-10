@@ -114,9 +114,9 @@ export class ConversationOrchestrator {
 
     if (decision) {
       decision.question = ConversationOrchestrator.sanitizeQuestion(decision.question);
-      // Never allow CLOSE_INTERVIEW before the minimum, regardless of what the
-      // model proposes — this is enforced in code, not trusted from the model.
-      if (decision.decision.type === 'CLOSE_INTERVIEW' && questionsAskedCount < ConversationOrchestrator.MIN_QUESTIONS_BEFORE_CLOSE) {
+      if (questionsAskedCount >= 10) {
+        decision.decision.type = 'CLOSE_INTERVIEW';
+      } else if (decision.decision.type === 'CLOSE_INTERVIEW' && questionsAskedCount < 8) {
         decision.decision.type = 'NEW_TOPIC';
       }
     }
