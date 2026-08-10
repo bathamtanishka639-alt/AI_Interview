@@ -32,6 +32,22 @@ This document defines the development rules, architectural memory guidelines, sa
 - **Decision**: Enforce a 30-minute global session limit (`GLOBAL_DURATION_SEC = 1800`), 3-minute per-question answer window (`QUESTION_DURATION_SEC = 180`), and 30-second initial typing window (`START_TYPING_WINDOW_SEC = 30`).
 - **Reasoning**: Accommodates 10 curriculum-grounded questions per session while preventing stalled sessions and allowing candidates time for detailed engineering responses.
 
+#### Decision 6: AI ATS Compatibility Scoring Engine
+- **Decision**: Implement a weighted mathematical scoring engine (`AtsScoringEngine`) evaluating Keyword Match (20%), Skills Match (25%), Experience Relevance (20%), Project Relevance (15%), Education Relevance (10%), Formatting (5%), and Achievements (5%).
+- **Reasoning**: Provides an explainable, quantitative ATS compatibility score labeled explicitly as "AI ATS Compatibility Score" without claiming to mimic proprietary vendor parser black boxes.
+
+#### Decision 7: Mandatory CV Claim Verification & Contradiction Flagging
+- **Decision**: Extend `TURN_DECISION_SCHEMA` with `claimVerification` (`strong` | `weak` | `unverified` | `not_applicable`), `contradictsCv`, and `contradictionDetail`.
+- **Reasoning**: Requires Gemini to evaluate whether the candidate substantiated specific CV claims and explicitly flag direct factual contradictions between candidate answers and CV text.
+
+#### Decision 8: Ranked CV Anchor Question Planning
+- **Decision**: `QuestionPlanner` ranks candidate CV facts by weak topics, projects, languages, and frameworks to seed the scope (8–12 questions) and opening question, delegating all subsequent turn questions to `ConversationOrchestrator`.
+- **Reasoning**: Eliminates pre-written questionnaire filler while ensuring the live orchestrator always has a priority-ranked CV anchor list.
+
+#### Decision 9: Session Recovery & Refresh Persistence
+- **Decision**: Persist `cvProfile`, `interviewMode`, and `sessionId` in `sessionStorage`, backed by `GET /api/interview/session/:sessionId` to rebuild chat state and timers on browser reload or network interruption.
+- **Reasoning**: Prevents loss of active interview progress when candidates refresh their page or experience temporary Wi-Fi drops.
+
 ---
 
 ## 2. Safety & Data Loss Prevention Protocol
@@ -46,7 +62,7 @@ This document defines the development rules, architectural memory guidelines, sa
 
 ### Backend (Node.js, Express, TypeScript)
 - Strict TypeScript typing across models ([`interfaces.ts`](file:///Users/tanishkabatham/Desktop/AI_Interview/backend/src/models/interfaces.ts)).
-- Clean Architecture principles separating route handlers (`routes/`), business logic (`interview/`), prompt templates (`prompts/`), and external APIs (`services/`).
+- Clean Architecture principles separating route handlers (`routes/`), business logic (`interview/`), prompt templates (`prompts/`), ATS analyzer (`ats/`), and external APIs (`services/`).
 - Proper error handling middleware returning clean JSON error responses with standard HTTP status codes (400, 404, 415, 500).
 
 ### Frontend (React 18, Vite, TailwindCSS)
@@ -62,4 +78,4 @@ This document defines the development rules, architectural memory guidelines, sa
 Before completing any development task:
 1. Run backend type checking: `cd backend && npx tsc --noEmit`
 2. Run frontend build check: `cd frontend && npm run build`
-3. Execute runtime verification tests.
+3. Execute runtime integration tests: `node ./dist/interview/test_scenarios_runner.js`

@@ -1,6 +1,6 @@
 # ⚡ AI Technical Interview Agent — "Liquid Signal" Platform
 
-> Production-grade, AI-orchestrated technical interview platform powered by Google Gemini, Node.js, Express, TypeScript, and React with Framer Motion. 
+> Production-grade, AI-orchestrated technical interview platform powered by Google Gemini (`gemini-3.5-flash-lite`), Node.js, Express, TypeScript, and React with Framer Motion. 
 
 ---
 
@@ -8,49 +8,49 @@
 
 The **AI Technical Interview Agent** is an autonomous, multi-turn interview orchestration platform designed to evaluate candidate engineering competency against real-world CVs and a structured **30-Day AI Engineer Mastery Curriculum**.
 
-Unlike simple chat interfaces or rigid single-shot prompt generators, this platform operates on a **Single-Turn Atomic Orchestration Engine**. Every candidate response triggers a structured reasoning cycle (`evaluate` → `decide` → `respond`) enforced via **Google Gemini native `responseSchema`**, deterministic difficulty hysteresis, automated repetition guards, and graph-based persistent architectural memory via **Breeth**.
+Unlike simple chat interfaces or rigid single-shot prompt generators, this platform operates on a **Single-Turn Atomic Orchestration Engine**. Every candidate response triggers a structured reasoning cycle (`evaluate` → `decide` → `respond`) enforced via **Google Gemini native `responseSchema`**, CV claim verification, deterministic difficulty hysteresis, automated repetition guards, AI ATS scoring, and graph-based persistent architectural memory via **Breeth**.
 
 ---
 
 ## ✨ Key Features & Technical Highlights
 
 ### 🎯 1. Structured Turn Orchestration Engine
-- **Atomic Reasoning (`TURN_DECISION_SCHEMA`)**: Enforces `responseMimeType: "application/json"` with a strict JSON schema on Gemini API calls. The model cannot generate natural language before completing structured quality classification (`quality`, `technicalDepth` 1-5, `communication`, `confidence`, `missingInfo`, `misconception`).
-- **No-Cheerleading Tone Guarantee**: Hard behavioral directives eliminate generic filler ("Great answer!", "Awesome!"). All acknowledgements must reference concrete candidate response text.
+- **Atomic Reasoning (`TURN_DECISION_SCHEMA`)**: Enforces `responseMimeType: "application/json"` with a strict JSON schema on Gemini API calls (`gemini-3.5-flash-lite`). The model evaluates quality, depth (1-5), communication, confidence, missing info, misconceptions, **CV claim verification** (`strong` | `weak` | `unverified` | `not_applicable`), and **CV contradiction flagging** (`contradictsCv`, `contradictionDetail`).
+- **No-Cheerleading Tone Guarantee**: Hard behavioral directives eliminate generic filler ("Great answer!", "Awesome!"). All acknowledgements reference concrete candidate response text.
 - **Single-Question Enforcement**: Automated regex and structural sanitizers ensure exactly ONE open-ended question is delivered per turn.
 
-### 📚 2. 30-Day AI Cohort Curriculum & Progress Alignment
-- **5 Core Modules**:
-  1. *Module 1: Foundations of LLM App Architecture* (Days 1–6)
-  2. *Module 2: Advanced Retrieval & Vector DBs* (Days 7–12)
-  3. *Module 3: Autonomous Agents & LangChain* (Days 13–18)
-  4. *Module 4: Fine-Tuning & Evaluation* (Days 19–24)
-  5. *Module 5: Production Deployment & Scaling* (Days 25–30)
-- **Targeted Question Planning**: Generates **8–10 questions** per session spanning at least 4 curriculum modules, pairing candidate `weakTopics` and `completedDays` with CV project claims.
+### 📄 2. AI ATS Compatibility Scoring Engine (`/api/cv/ats`)
+- **Weighted Mathematical Model**: Computes candidate ATS compatibility across 7 weighted dimensions:
+  - **Keyword Match Score (20%)**: Target role keyword alignment.
+  - **Skills Match Score (25%)**: Programming language, framework, and tool index.
+  - **Experience Relevance (20%)**: Work experience and internship depth.
+  - **Project Relevance (15%)**: System design and architectural project depth.
+  - **Education Relevance (10%)**: Degree and academic background.
+  - **Formatting & Structure (5%)**: Profile structure and contact metadata completeness.
+  - **Achievement Quality (5%)**: Certifications and quantifiable metrics.
+- **Explainable Feedback**: Generates letter grades (`A+` to `F`), detected keywords, missing keywords, strengths, and actionable resume optimization suggestions.
 
-### 📈 3. Adaptive Difficulty Engine with Hysteresis
-- **Oscillation Protection**: Prevents difficulty jitter on noisy or short answers by requiring **2 consecutive turns of consistent signal** before shifting difficulty levels (`beginner` ↔ `intermediate` ↔ `advanced` ↔ `expert`). Shift magnitude is clamped to 1 step per turn.
+### 📚 3. Ranked CV Anchor Question Planning
+- **CV Anchor Prioritization**: [`QuestionPlanner`](file:///Users/tanishkabatham/Desktop/AI_Interview/backend/src/interview/questionPlanner.ts) produces a ranked, CV-grounded topic plan (8–12 questions) prioritized by weak topics, projects, languages, frameworks, and tools.
+- **Live Orchestrator Generation**: Only Question 1 is generated verbatim for the opening line; subsequent questions are generated live by `ConversationOrchestrator` based on candidate answers.
 
-### 🛡️ 4. Repetition Guard & Coverage Tracker
+### 📈 4. Adaptive Difficulty Engine with Hysteresis
+- **Oscillation Protection**: Requires **2 consecutive turns of consistent signal** before shifting difficulty levels (`beginner` ↔ `intermediate` ↔ `advanced` ↔ `expert`). Shift magnitude is clamped to 1 step per turn.
+
+### 🛡️ 5. Repetition Guard & Coverage Tracker
 - **3-Layer Question Deduplication**:
   1. *Exact Normalized Text Match*
   2. *Jaccard Word Similarity (Threshold ≥ 0.65)*
   3. *8-Word Opening Phrase Match*
-- **Automatic Retry**: Triggers a single system retry with anti-repeat prompt context if a duplicate question is generated.
-- **CV Coverage Whitelist**: Tracks covered CV topics and logs remaining uncovered skills across the session.
+- **Coverage Tracker**: Injects covered vs. uncovered CV topics into the live Gemini prompt every turn.
 
-### 🧠 5. Breeth Architectural Graph Memory Integration
-- Records temporal timeline events (`question_asked`, `candidate_answer`, `evaluation`, `difficulty_adjustment`, `next_question_reasoning`).
+### 🧠 6. Breeth Architectural Graph Memory Integration
 - Persists progressive candidate beliefs (strengths +5, missing info -5) across sessions to adapt future interviews.
+- Visualized live via the **Breeth Memory Inspector** modal on the frontend.
 
-### ⏱️ 6. Real-Time Session Timing Protocol
-- **30-Minute Total Interview Limit**: Gives candidates 30 minutes total to complete their 10 tailored curriculum questions.
-- **3-Minute Per-Question Window**: Provides 3 minutes per question for deep technical explanations.
-- **30-Second Initial Typing Window**: Requires starting an answer within 30s before auto-advancing unattempted questions.
-
-### 🎨 7. "Liquid Signal" Design System (Frontend)
-- Built with React 18, Vite, TailwindCSS, and Framer Motion.
-- Glassmorphism surfaces, dark mode palette, Space Grotesk typography, JetBrains Mono data displays, Signal Pulse loading animations, and global drag-and-drop CV upload.
+### 📱 7. Mobile Touch UX & Session Recovery
+- **Mobile PDF/DOCX Upload**: Fully optimized for iOS Safari and Android Chrome document pickers (`.pdf`, `.doc`, `.docx`).
+- **Session Protection**: Active session state saved to `sessionStorage`. If a browser refresh or connection drop occurs, the candidate immediately resumes their interview on the exact question without losing history. Includes `beforeunload` exit confirmation alerts.
 
 ---
 
@@ -64,11 +64,11 @@ sequenceDiagram
     participant API as Express API (/api/interview)
     participant Engine as Interview Engine
     participant Orch as Turn Orchestration Engine
-    participant Gemini as Google Gemini (gemini-2.0-flash)
+    participant Gemini as Google Gemini (gemini-3.5-flash-lite)
     participant Guard as Repetition Guard & Coverage Tracker
     participant Breeth as Breeth Memory Graph
 
-    Candidate->>Web: Drops CV / Enters Answer
+    Candidate->>Web: Uploads CV / Enters Answer
     Web->>API: POST /api/interview { sessionId, message }
     API->>Engine: handleMessage(sessionId, message)
     Engine->>Breeth: buildPromptContext(sessionId)
@@ -104,6 +104,10 @@ AI_Interview/
 │   │   ├── sessions.json       # Session persistence storage
 │   │   └── reports.json        # Evaluation report storage
 │   └── src/
+│       ├── ats/                # AI ATS Scoring & Analysis Engine
+│       │   ├── atsAnalyzer.ts  # ATS analysis orchestrator
+│       │   ├── atsScoring.ts   # Weighted mathematical scoring logic
+│       │   └── atsTypes.ts     # ATS data interfaces
 │       ├── breeth/             # Breeth Graph Memory service abstraction
 │       ├── curriculum/         # Curriculum & candidate profile loader service
 │       ├── cv/                 # CV Parser (PDF & DOCX text extraction)
@@ -112,9 +116,10 @@ AI_Interview/
 │       │   ├── coverageTracker.ts           # CV topic whitelist tracker
 │       │   ├── feedbackGenerator.ts         # Transcript evaluation generator
 │       │   ├── interviewEngine.ts           # Session state lifecycle manager
-│       │   ├── questionPlanner.ts           # 8-10 Q curriculum planner
+│       │   ├── questionPlanner.ts           # Ranked CV anchor planner
 │       │   ├── repetitionGuard.ts           # Fuzzy/exact duplicate detector
-│       │   └── schemas.ts                   # TURN_DECISION_SCHEMA definition
+│       │   ├── schemas.ts                   # TURN_DECISION_SCHEMA definition
+│       │   └── test_scenarios_runner.ts     # 3-scenario integration test suite
 │       ├── middleware/         # Express logger & error handling middleware
 │       ├── models/             # TypeScript data models & interfaces
 │       ├── prompts/            # Reusable prompt templates
@@ -124,8 +129,7 @@ AI_Interview/
     └── src/
         ├── components/         # Glassmorphism UI primitives (Button, Card, Modal, Badge)
         ├── context/            # Global application context (InterviewContext)
-        ├── hooks/              # Custom async & audio/timer hooks
-        ├── pages/              # LandingPage, Dashboard, InterviewScreen, FinalReport, NotFound
+        ├── pages/              # LandingPage, Dashboard, InterviewScreen, FinalReport
         └── services/           # Frontend API client
 ```
 
@@ -133,7 +137,42 @@ AI_Interview/
 
 ## 🛠️ API Reference
 
-### 1. Hackathon Spec Endpoint (`POST /api/interview`)
+### 1. ATS Compatibility Analysis (`POST /api/cv/ats`)
+- **Request**:
+  ```json
+  POST /api/cv/ats
+  {
+    "jobDescription": "Seeking Senior AI Engineer with Python, React, Docker, RAG, and Kubernetes experience.",
+    "cvProfile": { ... }
+  }
+  ```
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "overallAtsScore": 82,
+      "grade": "A",
+      "label": "AI ATS Compatibility Score",
+      "isJobDescriptionProvided": true,
+      "breakdown": {
+        "keywordMatchScore": 80,
+        "skillsMatchScore": 100,
+        "experienceRelevanceScore": 70,
+        "projectRelevanceScore": 75,
+        "educationRelevanceScore": 90,
+        "formattingStructureScore": 100,
+        "achievementQualityScore": 100
+      },
+      "detectedKeywords": ["python", "react", "docker", "rag"],
+      "missingKeywords": ["kubernetes", "microservices"],
+      "strengths": ["Strong technical skill index (14 technologies identified)."],
+      "improvements": ["Add missing role keywords: kubernetes, microservices."]
+    }
+  }
+  ```
+
+### 2. Hackathon Spec Endpoint (`POST /api/interview`)
 Standard API contract route for automated evaluation and judge runner.
 
 - **Start Session**:
@@ -148,13 +187,6 @@ Standard API contract route for automated evaluation and judge runner.
     }
   }
   ```
-  **Response**:
-  ```json
-  {
-    "reply": "Welcome Alex. Let's begin your technical interview.",
-    "done": false
-  }
-  ```
 
 - **Conversation Turn**:
   ```json
@@ -165,77 +197,31 @@ Standard API contract route for automated evaluation and judge runner.
   }
   ```
 
-- **Completion Response**:
-  ```json
-  {
-    "reply": "Thank you. That completes your technical interview session.",
-    "done": true,
-    "feedback": {
-      "summary": "Demonstrated strong knowledge of hybrid search and RAG architecture.",
-      "strengths": ["Clear articulation of vector search mechanisms", "Understands embedding models"],
-      "gaps": ["Elaborate further on Kubernetes ingress timeouts and failover"],
-      "next": ["Practice multi-node vector index tuning and distributed caching"]
-    }
-  }
-  ```
-
-### 2. Interactive Endpoints
+### 3. Interactive Endpoints
 - `POST /api/cv/parse` — Multi-part form upload for PDF/DOCX CV parsing.
 - `POST /api/interview/start` — Start tailored interview with mode selection (`technical`, `hr`, `behavioral`, `mixed`).
-- `POST /api/interview/message` — Process answer and return rich turn metadata (`reply`, `isCompleted`, `nextDifficulty`, `timedQuestions`).
-- `GET /api/interview/report/:id` — Retrieve full evaluation report.
-- `GET /api/curriculum` — Retrieve 30-Day AI Cohort curriculum modules.
-- `GET /api/candidate` — Retrieve active candidate profile and progress data.
-- `GET /api/breeth/memory/:identifier` — Inspect Breeth graph memory entity for developer debugging.
+- `POST /api/interview/message` — Process answer and return rich turn metadata.
+- `GET /api/interview/session/:sessionId` — Recover active session on refresh or network drop.
+- `GET /api/interview/report/:id` — Retrieve full evaluation report with CV claim scores and inconsistency flags.
 
 ---
 
-## 🚀 Quick Start Guide
+## 🧪 Verification & Testing
 
-### Prerequisites
-- **Node.js**: v18.0.0 or higher
-- **npm**: v9.0.0 or higher
-- **Gemini API Key**: Set `GEMINI_API_KEY` in `backend/.env` (optional fallback to intelligent local mode)
-
-### 1. Backend Setup
-```bash
-cd backend
-npm install
-
-# Create environment file
-echo "GEMINI_API_KEY=your_gemini_api_key_here" > .env
-echo "PORT=8001" >> .env
-
-# Run in development mode
-npm run dev
-
-# Build and run production server
-npm run build
-npm start
-```
-
-### 2. Frontend Setup
-```bash
-cd frontend
-npm install
-
-# Run Vite dev server
-npm run dev
-
-# Build production bundle
-npm run build
-```
-
----
-
-## 🧪 Testing & Verification
+To verify all changes locally:
 
 ```bash
-# Type check backend
+# 1. Typecheck Backend
 cd backend && npx tsc --noEmit
 
-# Type check and build frontend
-cd frontend && npm run build
+# 2. Build Backend Production Bundle
+npm run build
+
+# 3. Run 3-Scenario Integration Test Suite
+node ./dist/interview/test_scenarios_runner.js
+
+# 4. Verify Frontend Build
+cd ../frontend && npm run build
 ```
 
 ---

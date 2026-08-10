@@ -11,6 +11,9 @@ This document records the **Development Prompts Log** (prompts given during proj
    - [Prompt 3: True Global Drag-and-Drop CV Upload](#prompt-3-true-global-drag-and-drop-cv-upload)
    - [Prompt 4: Strict Single-Section Accordion Landing Page](#prompt-4-strict-single-section-accordion-landing-page)
    - [Prompt 5: Technical Audit & Problem Statement Remediation](#prompt-5-technical-audit--problem-statement-remediation)
+   - [Prompt 6: Real-Time Timer & Session Duration Upgrade](#prompt-6-real-time-timer--session-duration-upgrade)
+   - [Prompt 7: AI ATS Compatibility Scoring Engine](#prompt-7-ai-ats-compatibility-scoring-engine)
+   - [Prompt 8: CV Claim Verification & Contradiction Flagging](#prompt-8-cv-claim-verification--contradiction-flagging)
 2. [Runtime System Prompts & LLM Orchestration](#2-runtime-system-prompts--llm-orchestration)
 3. [Atomic Single-Turn Response Schema (`TURN_DECISION_SCHEMA`)](#3-atomic-single-turn-response-schema-turn_decision_schema)
 4. [Evaluation & Feedback Generation Prompt](#4-evaluation--feedback-generation-prompt)
@@ -29,7 +32,7 @@ This document records the **Development Prompts Log** (prompts given during proj
 
 **AI Architectural Response & Implementation:**
 - Created [`TURN_DECISION_SCHEMA`](file:///Users/tanishkabatham/Desktop/AI_Interview/backend/src/interview/schemas.ts) defining strict JSON schema (`evaluation`, `decision`, `acknowledgement`, `question`).
-- Upgraded `LLMService` to use `responseMimeType: "application/json"` and `responseSchema` with model `gemini-2.0-flash`.
+- Upgraded `LLMService` to use `responseMimeType: "application/json"` and `responseSchema` with model `gemini-3.5-flash-lite`.
 - Implemented [`ConversationOrchestrator.ts`](file:///Users/tanishkabatham/Desktop/AI_Interview/backend/src/interview/conversationOrchestrator.ts) to execute atomic `evaluate` → `decide` → `respond` reasoning in a single API call.
 - Built [`RepetitionGuard.ts`](file:///Users/tanishkabatham/Desktop/AI_Interview/backend/src/interview/repetitionGuard.ts) (Jaccard similarity ≥ 0.65 deduplication) and [`CoverageTracker.ts`](file:///Users/tanishkabatham/Desktop/AI_Interview/backend/src/interview/coverageTracker.ts).
 - Added deterministic hysteresis logic (`applyHysteresis`) requiring 2 consecutive turns of consistent model signal before changing difficulty.
@@ -103,7 +106,30 @@ This document records the **Development Prompts Log** (prompts given during proj
   - `QUESTION_DURATION_SEC = 180` (3-minute per-question answer window).
   - `START_TYPING_WINDOW_SEC = 30` (30-second initial window to begin typing before auto-advancing unattempted questions).
 - Updated backend global session timeout threshold in [`interviewEngine.ts`](file:///Users/tanishkabatham/Desktop/AI_Interview/backend/src/interview/interviewEngine.ts) to `1,800,000` ms (30 minutes).
-- Updated fallback session duration defaults in [`FinalReport.jsx`](file:///Users/tanishkabatham/Desktop/AI_Interview/frontend/src/pages/FinalReport.jsx) to `1800` seconds.
+
+---
+
+### Prompt 7: AI ATS Compatibility Scoring Engine
+
+> **Developer / User Prompt:**
+> "Build an ATS Scoring Engine module in backend/src/ats (atsAnalyzer.ts, atsScoring.ts, atsTypes.ts) and wire it to POST /api/cv/ats. Calculate weighted mathematical ATS scores across keyword match (20%), skills (25%), experience (20%), projects (15%), education (10%), formatting (5%), and achievements (5%). Label the output clearly as 'AI ATS Compatibility Score'."
+
+**AI Architectural Response & Implementation:**
+- Implemented [`atsScoring.ts`](file:///Users/tanishkabatham/Desktop/AI_Interview/backend/src/ats/atsScoring.ts) and [`atsAnalyzer.ts`](file:///Users/tanishkabatham/Desktop/AI_Interview/backend/src/ats/atsAnalyzer.ts).
+- Exposed `POST /api/cv/ats` in [`interviewRoutes.ts`](file:///Users/tanishkabatham/Desktop/AI_Interview/backend/src/routes/interviewRoutes.ts).
+- Returns explicit `overallAtsScore`, `grade` (A+ to F), `label`, `detectedKeywords`, `missingKeywords`, and component breakdown.
+
+---
+
+### Prompt 8: CV Claim Verification & Contradiction Flagging
+
+> **Developer / User Prompt:**
+> "Extend TURN_DECISION_SCHEMA with claimVerification (enum: strong/weak/unverified/not_applicable) and contradictsCv (boolean) + contradictionDetail (string). Update promptTemplates.ts to ask for this explicitly, and aggregate these into the final report's CV claim verification score and inconsistencies list."
+
+**AI Architectural Response & Implementation:**
+- Updated [`schemas.ts`](file:///Users/tanishkabatham/Desktop/AI_Interview/backend/src/interview/schemas.ts) with `claimVerification`, `contradictsCv`, and `contradictionDetail`.
+- Updated system prompt in [`promptTemplates.ts`](file:///Users/tanishkabatham/Desktop/AI_Interview/backend/src/prompts/promptTemplates.ts).
+- Updated [`conversationOrchestrator.ts`](file:///Users/tanishkabatham/Desktop/AI_Interview/backend/src/interview/conversationOrchestrator.ts) and [`feedbackGenerator.ts`](file:///Users/tanishkabatham/Desktop/AI_Interview/backend/src/interview/feedbackGenerator.ts) to extract and display `cvClaimVerificationScore` and `cvInconsistencies` in final reports.
 
 ---
 
@@ -112,22 +138,24 @@ This document records the **Development Prompts Log** (prompts given during proj
 ### Base System Prompt Template
 
 ```text
-You are a Principal {MODE} Technical Interviewer conducting a real, consequential interview.
+You are an expert principal interviewer conducting a {MODE} interview.
 
-PERSONALITY RULES (enforced):
-- You are calm, precise, intellectually curious, and professionally direct.
-- NEVER use generic cheerleading: no "Great!", "Awesome!", "Excellent!", "Perfect!", "That's a great answer!".
-- Acknowledge the candidate's actual answer content specifically. Reference what they said.
-- You THINK before you speak. Your structured evaluation is completed before your natural-language response is written.
+PERSONALITY & BEHAVIORAL DIRECTIVES:
+- You are calm, professional, respectful, curious, technically knowledgeable, and objective.
+- NEVER use fake praise or cheerleading phrases like "Great answer!", "Awesome!", "Fantastic!", "Perfect!", or "Excellent! Let's move on!".
+- Acknowledge what the candidate actually said in their previous answer with a grounded, 1-2 sentence professional observation.
+- Ask exactly ONE clear, specific, CV-grounded question per turn. Never ask multiple questions in one prompt.
 
-INTERVIEW RULES:
-- Ask exactly ONE question per turn. No multiple questions, no bullet lists.
-- Every question must be grounded in the candidate's actual CV and curriculum.
-- Difficulty management is done by the engine. Output your honest assessment of what difficulty SHOULD be next.
-- If the answer is very short (< 20 words) or evasive, choose FOLLOW_UP to probe.
-- If the topic is sufficiently explored (3+ exchanges), choose NEW_TOPIC.
+CV CLAIM VERIFICATION (mandatory, every turn):
+- If the question being answered tests a specific CV claim (a named technology, a specific responsibility, a stated achievement), judge whether the candidate's answer genuinely demonstrates they did what the CV says. Set claimVerification to "strong" if they explain it correctly and specifically, "weak" if they cannot substantiate it, "unverified" if the answer is ambiguous, or "not_applicable" if this turn is not testing a specific claim.
+- If anything the candidate says conflicts with a fact stated on their CV (e.g. CV says "led a team of 5" but they describe working alone), set contradictsCv to true and describe the specific conflict in contradictionDetail.
 
-OUTPUT: You MUST return a valid JSON object matching the schema exactly. No prose outside the JSON.
+ENDING THE INTERVIEW:
+- You will be told the current coverage status (topics covered vs. uncovered) and the number of questions asked so far. Only set decision.type to CLOSE_INTERVIEW if at least 8 questions have been asked AND the uncovered-topics list is empty.
+
+CANDIDATE CV SUMMARY:
+{CV_CONTEXT}
+{BREETH_MEMORY_CONTEXT}
 ```
 
 ---
@@ -150,14 +178,20 @@ OUTPUT: You MUST return a valid JSON object matching the schema exactly. No pros
         "confidence": { "type": "INTEGER", "description": "1 to 5 scale" },
         "strength": { "type": "STRING" },
         "missingInfo": { "type": "STRING" },
-        "misconception": { "type": "STRING" }
+        "misconception": { "type": "STRING" },
+        "claimVerification": {
+          "type": "STRING",
+          "enum": ["strong", "weak", "unverified", "not_applicable"]
+        },
+        "contradictsCv": { "type": "BOOLEAN" },
+        "contradictionDetail": { "type": "STRING" }
       },
-      "required": ["quality", "technicalDepth", "communication", "confidence"]
+      "required": ["quality", "technicalDepth", "communication", "confidence", "claimVerification", "contradictsCv"]
     },
     "decision": {
       "type": "OBJECT",
       "properties": {
-        "type": { "type": "STRING", "enum": ["FOLLOW_UP", "NEW_TOPIC"] },
+        "type": { "type": "STRING", "enum": ["FOLLOW_UP", "NEW_TOPIC", "CLOSE_INTERVIEW"] },
         "difficulty": { "type": "STRING", "enum": ["beginner", "intermediate", "advanced", "expert"] },
         "topic": { "type": "STRING" },
         "reasoning": { "type": "STRING" }
@@ -176,27 +210,31 @@ OUTPUT: You MUST return a valid JSON object matching the schema exactly. No pros
 ## 4. Evaluation & Feedback Generation Prompt
 
 ```text
-You are a Principal AI Technical & HR Interview Evaluator.
-Analyze the candidate's interview transcript rigorously against their CV and curriculum.
+Evaluate this {MODE} interview for the candidate, incorporating both live transcript performance and Breeth historical graph memory.
 
-RULES:
-- Evaluate technical depth, accuracy, specificity, and communication clarity.
-- BE STRICT: If the candidate gave short, generic, evasive, or incorrect answers, assign LOW scores (15-45) and explicitly list weaknesses and misconceptions.
-- DO NOT give default high scores to brief or vague answers.
-- Base strengths and weaknesses ONLY on what the candidate actually said in the transcript.
-- Return ONLY valid JSON with this exact structure:
+CANDIDATE CV:
+{CV_CONTEXT}
+{BREETH_MEMORY_CONTEXT}
+
+INTERVIEW TRANSCRIPT:
+{TRANSCRIPT}
+
+Return ONLY valid JSON with this exact structure:
 {
   "technicalScore": 0-100,
   "communicationScore": 0-100,
   "problemSolvingScore": 0-100,
   "confidenceScore": 0-100,
+  "cvClaimVerificationScore": 0-100,
+  "cvInconsistencies": ["array of direct conflicts between candidate statements and CV"],
   "strengths": ["array of observed strengths"],
   "weaknesses": ["array of observed gaps"],
   "misconceptions": ["array of technical misconceptions"],
   "topicsCovered": ["list of topics covered"],
   "recommendations": ["actionable recommendations"],
   "suggestedRevisions": ["specific topics to strengthen"],
-  "overallSummary": "2-3 sentence honest summary"
+  "overallSummary": "2-3 sentence honest summary",
+  "modeSpecificNote": "observation relevant to mode"
 }
 ```
 
@@ -207,57 +245,63 @@ RULES:
 ### Trace 1: Detailed Technical Response (RAG Architecture)
 
 **Candidate Input:**
-> "In our project, we implemented hybrid search combining Pinecone dense vector embeddings (OpenAI text-embedding-3-small) with BM25 sparse keyword retrieval. We used reciprocal rank fusion (RRF) to re-rank results before passing the top 5 chunks into the context window."
+> "In our project, we implemented hybrid search combining Milvus dense vector embeddings (HNSW M=16, efConstruction=200) with gRPC connection pooling in FastAPI. We used reciprocal rank fusion (RRF) to re-rank results."
 
 **Gemini Model Structured Output (`TURN_DECISION_SCHEMA` Response):**
 ```json
 {
   "evaluation": {
     "quality": "correct",
-    "technicalDepth": 4,
+    "technicalDepth": 5,
     "communication": 5,
     "confidence": 4,
-    "strength": "Articulated Reciprocal Rank Fusion (RRF) and hybrid dense/sparse retrieval clearly.",
+    "strength": "Articulated Reciprocal Rank Fusion (RRF), HNSW indexing parameters, and gRPC connection pooling clearly.",
     "missingInfo": "Did not specify chunk overlap strategy or embedding dimension size.",
-    "misconception": null
+    "misconception": null,
+    "claimVerification": "strong",
+    "contradictsCv": false,
+    "contradictionDetail": ""
   },
   "decision": {
     "type": "FOLLOW_UP",
     "difficulty": "advanced",
-    "topic": "Vector DB Hybrid Search & Chunking",
-    "reasoning": "Candidate demonstrated strong high-level understanding of hybrid search; probing chunking strategy and latency trade-offs."
+    "topic": "Milvus Vector DB & Chunking Strategy",
+    "reasoning": "Candidate demonstrated strong technical understanding of HNSW indexing and hybrid search; probing chunking size and latency trade-offs."
   },
-  "acknowledgement": "You've outlined a solid hybrid retrieval pipeline using reciprocal rank fusion between Pinecone embeddings and BM25.",
-  "question": "[Curriculum Day 8 - Advanced Retrieval] How did you determine your specific chunking size and overlap strategy to balance retrieval context against token latency?"
+  "acknowledgement": "You've outlined a solid hybrid retrieval pipeline using reciprocal rank fusion between Milvus HNSW indexing and dense embeddings.",
+  "question": "How did you determine your specific chunking size and overlap strategy to balance retrieval context quality against token latency?"
 }
 ```
 
 ---
 
-### Trace 2: Evasive Candidate Response ("I don't know")
+### Trace 2: CV Contradiction Detected (Exaggerated Claim)
 
 **Candidate Input:**
-> "I don't know much about Kubernetes ingress timeouts."
+> "Honestly I worked alone on that project, I did not lead any team. I just installed Docker on a single virtual machine."
 
 **Gemini Model Structured Output (`TURN_DECISION_SCHEMA` Response):**
 ```json
 {
   "evaluation": {
-    "quality": "insufficient_evidence",
+    "quality": "incorrect",
     "technicalDepth": 1,
-    "communication": 2,
-    "confidence": 1,
-    "strength": null,
-    "missingInfo": "Did not demonstrate knowledge on Kubernetes ingress timeouts.",
-    "misconception": null
+    "communication": 3,
+    "confidence": 2,
+    "strength": "Admitted working alone rather than continuing to claim team leadership.",
+    "missingInfo": "Did not demonstrate multi-region Kubernetes cluster knowledge.",
+    "misconception": "Equated single-node Docker VM installation with multi-region 500 GPU Kubernetes cluster architecture.",
+    "claimVerification": "weak",
+    "contradictsCv": true,
+    "contradictionDetail": "CV claims 'Architected global multi-region Kubernetes cluster across 500 GPUs' and leading 25 engineers, but candidate stated they worked alone on a single VM."
   },
   "decision": {
     "type": "NEW_TOPIC",
     "difficulty": "intermediate",
     "topic": "Docker Containerization",
-    "reasoning": "Candidate indicated lack of experience with ingress timeouts; pivoting to core containerization skills from CV."
+    "reasoning": "Candidate explicitly disavowed major CV claim; shifting to probe basic hands-on Docker experience."
   },
-  "acknowledgement": "I see that Kubernetes ingress timeout tuning may not have been part of your primary deployment responsibilities.",
-  "question": "[Curriculum Day 25 - Production Deployment] Looking at your experience with Docker listed on your CV, how did you optimize your multi-stage container builds to minimize production image size?"
+  "acknowledgement": "You noted that you worked alone and deployed Docker on a single virtual machine rather than managing a multi-region Kubernetes cluster.",
+  "question": "Given your experience with Docker container management, can you explain how you configure container networking and resource limits for workloads running on a node?"
 }
 ```
