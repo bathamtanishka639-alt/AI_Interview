@@ -17,6 +17,17 @@ import { ConversationOrchestrator } from './conversationOrchestrator';
 import { RepetitionGuard } from './repetitionGuard';
 import { CoverageTracker } from './coverageTracker';
 
+function isPassOrNonAnswer(msg: string): boolean {
+  const clean = (msg || '').trim().toLowerCase();
+  if (!clean) return true;
+  if (clean.length === 1 && ['.', '?', '-', 'x', 'a', 'b', 'c', 'd'].includes(clean)) return true;
+  const nonAnswerPhrases = [
+    'skip', 'pass', 'idk', "don't know", 'dont know', 'no idea', 'not sure',
+    'next', 'next question', 'no answer', 'none', 'nothing', '...', '..'
+  ];
+  return nonAnswerPhrases.includes(clean);
+}
+
 export class InterviewEngine {
   private sessions: Map<string, InterviewSession> = new Map();
   private reports: Map<string, InterviewReport> = new Map();
@@ -189,7 +200,7 @@ export class InterviewEngine {
     if (statusOverride) {
       currentLog.status = statusOverride;
     } else {
-      currentLog.status = userMessage.trim().length > 0 ? 'answered' : 'not_attempted';
+      currentLog.status = isPassOrNonAnswer(userMessage) ? 'not_attempted' : 'answered';
     }
 
     const wordCount = userMessage.trim().split(/\s+/).filter(Boolean).length;
@@ -202,21 +213,21 @@ export class InterviewEngine {
     );
 
     const sessionStartMs = new Date(
-      session.interviewStartedAt || session.startTime
+      session.interviewStartedAt || session.startTime || nowIso
     ).getTime();
     const globalElapsedMs = now - sessionStartMs;
     const isGlobalTimeExpired = globalElapsedMs >= 1800000;
 
     const timedLogs = session.timedQuestions || [];
-    const answeredCount = timedLogs.filter(q => q.status === 'answered' || q.status === 'timed_out' || q.status === 'not_attempted').length;
+    const answeredCount = timedLogs.filter(q => q.status === 'answered').length;
+    const totalProcessedCount = timedLogs.length;
 
-    // Enforce 10 questions max, and conclude if at least 8 questions have been answered.
     const maxQuestionsReached = session.currentQuestionIndex >= 9 || session.questionsAsked.length >= 10;
-    const minAnsweredReached = answeredCount >= 8;
+    const minQuestionsReached = totalProcessedCount >= 8;
 
     const hasMore =
       !maxQuestionsReached &&
-      !minAnsweredReached &&
+      !minQuestionsReached &&
       !isGlobalTimeExpired &&
       session.currentQuestionIndex < session.questions.length - 1;
 
@@ -333,81 +344,22 @@ export class InterviewEngine {
       return { reply, isCompleted: false, nextDifficulty: session.difficulty };
     } else {
       session.status = 'completed';
-      session.endTime = nowIso;
-      session.interviewEndedAt = nowIso;
-      session.interviewDurationSeconds = Math.round((now - sessionStartMs) / 1000);
+      const endIso = new Date().toISOString();
+      if (!session.interviewStartedAt) {
+        session.interviewStartedAt = session.startTime || endIso;
+      }
+      session.endTime = endIso;
+      session.interviewEndedAt = endIso;
+      const sessionStartMs = new Date(session.interviewStartedAt).getTime();
+      session.interviewDurationSeconds = Math.max(1, Math.round((new Date(endIso).getTime() - sessionStartMs) / 1000));
 
       this.repetitionGuards.delete(sessionId);
       this.coverageTrackers.delete(sessionId);
 
-      const feedback = await FeedbackGenerator.generate(session);
-      const reportId = `rep-${Date.now()}`;
-
-      const timedLogs = session.timedQuestions || [];
-      const answeredCount = timedLogs.filter(q => q.status === 'answered').length;
-      const timedOutCount = timedLogs.filter(q => q.status === 'timed_out').length;
-      const notAttemptedCount = timedLogs.filter(q => q.status === 'not_attempted').length;
-      const validDurations = timedLogs.map(q => q.durationSeconds || 0).filter(d => d > 0);
-      const avgDuration =
-        validDurations.length > 0
-          ? Math.round(validDurations.reduce((a, b) => a + b, 0) / validDurations.length)
-          : 0;
-      const maxDuration = validDurations.length > 0 ? Math.max(...validDurations) : 0;
-
-      const overview: InterviewReportOverview = {
-        interviewStartedAt: session.interviewStartedAt || session.startTime,
-        interviewEndedAt: session.interviewEndedAt || session.endTime!,
-        interviewDurationSeconds: session.interviewDurationSeconds || 1800,
-        totalQuestions: timedLogs.length,
-        answeredQuestions: answeredCount,
-        timedOutQuestions: timedOutCount,
-        notAttemptedQuestions: notAttemptedCount,
-        averageAnswerTimeSeconds: avgDuration,
-        longestAnswerTimeSeconds: maxDuration,
-        questionLogs: timedLogs.map((q, idx) => ({
-          questionIndex: idx + 1,
-          promptText: q.promptText,
-          status: q.status,
-          durationSeconds: q.durationSeconds || 0
-        }))
-      };
-
-      await this.memoryService.saveMemory(
-        sessionId,
-        session.candidateId,
-        feedback.strengths,
-        feedback.weaknesses,
-        feedback.misconceptions,
-        feedback.confidenceScore
-      );
-
-      await this.memoryService.recordTimelineEvent(
-        sessionId,
-        'memory_update',
-        `Completed session. Technical: ${feedback.technicalScore}, Comm: ${feedback.communicationScore}, Confidence: ${feedback.confidenceScore}. Duration: ${session.interviewDurationSeconds}s.`
-      );
-
-      const report: InterviewReport = {
-        reportId,
-        sessionId,
-        candidateId: session.candidateId,
-        candidateName: session.cvProfile?.name || 'Candidate',
-        interviewMode: session.interviewMode,
-        createdAt: nowIso,
-        feedback,
-        transcriptSummary: {
-          totalQuestions: timedLogs.length,
-          totalExchanges: session.messages.filter(m => m.role === 'user').length
-        },
-        overview
-      };
-
-      this.reportList.push(reportId);
-      this.reports.set(reportId, report);
-      this.reports.set(sessionId, report);
+      const report = await this.generateReportForSession(session);
 
       const endReason = isGlobalTimeExpired
-        ? 'Your 10-minute interview duration limit has concluded.'
+        ? 'Your session duration limit has concluded.'
         : 'I have gathered sufficient evidence to evaluate your CV experience.';
       const reply = `Thank you. That completes your ${InterviewEngine.getModeLabel(session.interviewMode)} interview session. ${endReason}\n\nYour evaluation report is ready on your dashboard.`;
       ContextManager.appendMessage(session, 'assistant', reply);
@@ -445,20 +397,69 @@ export class InterviewEngine {
   }
 
   public async generateReportForSession(session: InterviewSession): Promise<InterviewReport> {
+    const nowIso = new Date().toISOString();
+
+    if (!session.interviewStartedAt) {
+      session.interviewStartedAt = session.startTime || nowIso;
+    }
+    if (!session.interviewEndedAt) {
+      session.endTime = session.endTime || nowIso;
+      session.interviewEndedAt = session.endTime;
+    }
+    if (session.status !== 'completed') {
+      session.status = 'completed';
+    }
+
+    const startMs = new Date(session.interviewStartedAt).getTime();
+    const endMs = new Date(session.interviewEndedAt).getTime();
+    const durationSec = Math.max(1, Math.round((endMs - startMs) / 1000));
+    session.interviewDurationSeconds = durationSec;
+
+    const timedLogs = session.timedQuestions || [];
+    const answeredCount = timedLogs.filter(q => q.status === 'answered').length;
+    const timedOutCount = timedLogs.filter(q => q.status === 'timed_out').length;
+    const notAttemptedCount = timedLogs.filter(q => q.status === 'not_attempted').length;
+    const validDurations = timedLogs.map(q => q.durationSeconds || 0).filter(d => d > 0);
+    const avgDuration =
+      validDurations.length > 0
+        ? Math.round(validDurations.reduce((a, b) => a + b, 0) / validDurations.length)
+        : 0;
+    const maxDuration = validDurations.length > 0 ? Math.max(...validDurations) : 0;
+
+    const overview: InterviewReportOverview = {
+      interviewStartedAt: session.interviewStartedAt,
+      interviewEndedAt: session.interviewEndedAt,
+      interviewDurationSeconds: durationSec,
+      totalQuestions: timedLogs.length,
+      answeredQuestions: answeredCount,
+      timedOutQuestions: timedOutCount,
+      notAttemptedQuestions: notAttemptedCount,
+      averageAnswerTimeSeconds: avgDuration,
+      longestAnswerTimeSeconds: maxDuration,
+      questionLogs: timedLogs.map((q, idx) => ({
+        questionIndex: idx + 1,
+        promptText: q.promptText,
+        status: q.status,
+        durationSeconds: q.durationSeconds || 0
+      }))
+    };
+
     const feedback = await FeedbackGenerator.generate(session);
     const reportId = `rep-${Date.now()}`;
+
     const report: InterviewReport = {
       reportId,
       sessionId: session.sessionId,
       candidateId: session.candidateId,
       candidateName: session.cvProfile?.name || 'Candidate',
       interviewMode: session.interviewMode,
-      createdAt: new Date().toISOString(),
+      createdAt: nowIso,
       feedback,
       transcriptSummary: {
-        totalQuestions: session.questions.length,
+        totalQuestions: timedLogs.length || session.questions.length,
         totalExchanges: session.messages.filter(m => m.role === 'user').length
-      }
+      },
+      overview
     };
 
     await this.memoryService.saveMemory(
@@ -468,6 +469,12 @@ export class InterviewEngine {
       feedback.weaknesses,
       feedback.misconceptions,
       feedback.confidenceScore
+    );
+
+    await this.memoryService.recordTimelineEvent(
+      session.sessionId,
+      'memory_update',
+      `Completed session. Technical: ${feedback.technicalScore}, Comm: ${feedback.communicationScore}, Confidence: ${feedback.confidenceScore}. Duration: ${durationSec}s.`
     );
 
     if (!this.reportList.includes(reportId)) this.reportList.push(reportId);
