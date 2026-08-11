@@ -3,13 +3,7 @@ export function getApiBaseUrl() {
   if (import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL;
   }
-  if (typeof window !== 'undefined' && window.location && window.location.hostname) {
-    const { protocol, hostname } = window.location;
-    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      return `${protocol}//${hostname}:8001/api`;
-    }
-  }
-  return 'http://localhost:8001/api';
+  return '/api';
 }
 
 export const config = {

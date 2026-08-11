@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 
 const InterviewContext = createContext(null);
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001/api';
 
 export function InterviewProvider({ children }) {
   const [cvProfile, setCvProfile] = useState(() => {

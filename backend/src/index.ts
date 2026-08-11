@@ -34,8 +34,8 @@ app.get('/', (req, res) => {
 
 app.use(ErrorMiddleware.handle);
 
-app.listen(PORT, () => {
-  console.log(`[Server] AI Interview Agent backend running on port ${PORT}`);
+app.listen(Number(PORT), '0.0.0.0', () => {
+  console.log(`[Server] AI Interview Agent backend running on port ${PORT} (0.0.0.0)`);
 });
 
 export default app;
