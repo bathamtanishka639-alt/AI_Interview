@@ -15,8 +15,18 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const allowed = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'];
-    if (allowed.includes(file.mimetype)) {
+    const allowedMIMEs = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+      'application/octet-stream',
+      'application/x-pdf',
+      'binary/octet-stream'
+    ];
+    const originalName = (file.originalname || '').toLowerCase();
+    const isAllowedExt = originalName.endsWith('.pdf') || originalName.endsWith('.doc') || originalName.endsWith('.docx');
+
+    if (allowedMIMEs.includes(file.mimetype) || isAllowedExt) {
       cb(null, true);
     } else {
       cb(new Error('Only PDF and DOCX files are supported.'));

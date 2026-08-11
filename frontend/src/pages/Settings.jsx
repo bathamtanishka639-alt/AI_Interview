@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Terminal, Cpu, Database, Network, Key, Layers, CheckCircle2 } from 'lucide-react';
 import PageContainer from '../components/layout/PageContainer';
 import { useTheme } from '../hooks/useTheme';
+import { config } from '../config/env';
 
 export default function Settings() {
   const { preference, resolved, setPreference } = useTheme();
@@ -83,7 +84,7 @@ export default function Settings() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-text-secondary">API Endpoint Base</span>
-                  <span className="text-text-primary">http://localhost:8001/api</span>
+                  <span className="text-text-primary">{config.API_BASE_URL}</span>
                 </div>
               </div>
             </div>
