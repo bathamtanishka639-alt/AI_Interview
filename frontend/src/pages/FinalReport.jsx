@@ -205,8 +205,8 @@ export default function FinalReport() {
             {[
               { label: 'Started',   value: formatTime12h(report.overview?.interviewStartedAt || report.createdAt) },
               { label: 'Ended',     value: formatTime12h(report.overview?.interviewEndedAt   || report.createdAt) },
-              { label: 'Duration',  value: formatDurationSec(report.overview?.interviewDurationSeconds || 1800)   },
-              { label: 'Questions', value: `${report.overview?.totalQuestions || report.transcriptSummary?.totalQuestions || 5} Total` },
+              { label: 'Duration',  value: formatDurationSec(report.overview?.interviewDurationSeconds ?? 0) },
+              { label: 'Questions', value: `${report.overview?.totalQuestions || report.transcriptSummary?.totalQuestions || 0} Total` },
             ].map(({ label, value }) => (
               <div key={label} className="p-3 rounded-[12px] bg-surface border border-border">
                 <span className="text-[10px] font-mono text-text-secondary block mb-1 uppercase">{label}</span>
@@ -217,7 +217,7 @@ export default function FinalReport() {
 
           <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
             <span className="px-2.5 py-1 rounded-pill bg-[rgba(20,224,180,0.10)] border border-[rgba(20,224,180,0.25)] text-[#0BBFA0] dark:text-[#14E0B4] font-medium">
-              Answered: {report.overview?.answeredQuestions ?? report.transcriptSummary?.totalQuestions ?? 0}
+              Answered: {report.overview?.answeredQuestions ?? 0}
             </span>
             <span className="px-2.5 py-1 rounded-pill bg-[rgba(255,176,32,0.10)] border border-[rgba(255,176,32,0.25)] text-[#E09800] dark:text-[#FFB020] font-medium">
               Timed out: {report.overview?.timedOutQuestions ?? 0}
