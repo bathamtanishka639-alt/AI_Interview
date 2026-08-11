@@ -87,22 +87,36 @@ export default function LandingPage() {
       }, 600);
 
       const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/cv/parse`, {
+      const endpoint = apiBase.endsWith('/') ? `${apiBase}cv/parse` : `${apiBase}/cv/parse`;
+      const res = await fetch(endpoint, {
         method: 'POST',
         body: formData,
       });
 
       clearInterval(stepTimer);
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || 'Failed to parse CV.');
+      const json = await res.json().catch(() => null);
+
+      if (!res.ok || !json || !json.success) {
+        let errText = json?.error;
+        if (!errText) {
+          if (res.status === 404) {
+            errText = 'Backend API endpoint not found (404). Please ensure VITE_API_BASE_URL environment variable points to your deployed backend URL.';
+          } else {
+            errText = `Server returned status ${res.status}. Please check backend logs or VITE_API_BASE_URL configuration.`;
+          }
+        }
+        throw new Error(errText);
       }
 
       setCvProfile(json.data);
       setParsedProfile(json.data);
       setUploadState(UPLOAD_STATES.SUCCESS);
     } catch (err) {
-      setError(err.message || 'An error occurred while processing your CV.');
+      let displayMsg = err.message || 'An error occurred while processing your CV.';
+      if (displayMsg.includes('Failed to fetch') || displayMsg.includes('NetworkError')) {
+        displayMsg = 'Could not connect to backend API server. If using a deployed website, please set VITE_API_BASE_URL environment variable to your deployed backend server URL.';
+      }
+      setError(displayMsg);
       setUploadState(UPLOAD_STATES.ERROR);
     }
   }, [setCvProfile]);

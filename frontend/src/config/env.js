@@ -1,7 +1,9 @@
 // src/config/env.js — real backend APIs enabled
 export function getApiBaseUrl() {
   if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL;
+    let url = import.meta.env.VITE_API_BASE_URL.trim();
+    if (url.endsWith('/')) url = url.slice(0, -1);
+    return url;
   }
   return '/api';
 }
