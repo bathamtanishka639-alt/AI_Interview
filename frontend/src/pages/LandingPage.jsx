@@ -7,8 +7,7 @@ import {
 } from 'lucide-react';
 import { useInterview } from '../context/InterviewContext';
 import { useTheme } from '../hooks/useTheme';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001/api';
+import { getApiBaseUrl } from '../config/env';
 
 const UPLOAD_STATES = {
   IDLE: 'idle',
@@ -42,11 +41,18 @@ export default function LandingPage() {
   const sectionContainerRef = useRef(null);
 
   const processFile = useCallback(async (file) => {
-    const allowed = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'];
+    const allowedMIMEs = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+      'application/octet-stream',
+      'application/x-pdf',
+      'binary/octet-stream'
+    ];
     const ext = file.name ? file.name.split('.').pop()?.toLowerCase() : '';
     const allowedExts = ['pdf', 'doc', 'docx'];
 
-    if (!allowedExts.includes(ext) && !allowed.includes(file.type)) {
+    if (!allowedExts.includes(ext) && !allowedMIMEs.includes(file.type)) {
       setError('Please upload a PDF or DOC/DOCX file.');
       setUploadState(UPLOAD_STATES.ERROR);
       return;
@@ -73,7 +79,8 @@ export default function LandingPage() {
         setParsingStep((prev) => (prev < PARSING_STEPS.length - 1 ? prev + 1 : prev));
       }, 600);
 
-      const res = await fetch(`${API_BASE}/cv/parse`, {
+      const apiBase = getApiBaseUrl();
+      const res = await fetch(`${apiBase}/cv/parse`, {
         method: 'POST',
         body: formData,
       });

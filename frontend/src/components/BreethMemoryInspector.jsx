@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiBaseUrl } from '../config/env';
 
 export default function BreethMemoryInspector({ sessionId, isOpen, onClose }) {
   const [memory, setMemory] = useState(null);
@@ -16,7 +17,8 @@ export default function BreethMemoryInspector({ sessionId, isOpen, onClose }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://localhost:8001/api/breeth/memory/${sessionId}`);
+      const apiBase = getApiBaseUrl();
+      const res = await fetch(`${apiBase}/breeth/memory/${sessionId}`);
       const data = await res.json();
       if (data.success && data.data) {
         setMemory(data.data);
