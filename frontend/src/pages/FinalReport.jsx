@@ -155,15 +155,7 @@ export default function FinalReport() {
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => {
-                  if (!cvProfile) {
-                    setCvProfile({
-                      name: report?.candidateName || 'Candidate',
-                      skills: report?.topicsCovered || ['Software Development'],
-                      programmingLanguages: [], frameworks: [], tools: [], projects: [],
-                      education: [], internships: [], workExperience: [], certifications: [],
-                      achievements: [], rawSummary: 'Practiced Candidate Profile'
-                    });
-                  }
+                  resetInterview();
                   navigate('/interview/setup');
                 }}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-btn text-white text-xs font-semibold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-glow min-h-[36px]"
@@ -174,7 +166,7 @@ export default function FinalReport() {
               </button>
               <button
                 onClick={() => {
-                  resetInterview();
+                  clearAllData();
                   navigate('/');
                 }}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-btn border border-border text-text-primary text-xs font-semibold hover:border-border/80 transition-all min-h-[36px]"

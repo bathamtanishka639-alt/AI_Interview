@@ -19,7 +19,10 @@ export function InterviewProvider({ children }) {
     catch { return null; }
   });
   const [sessionData, setSessionData] = useState(null);
-  const [reportId, setReportId] = useState(null);
+  const [reportId, setReportId] = useState(() => {
+    try { return sessionStorage.getItem('ai_active_report_id') || null; }
+    catch { return null; }
+  });
 
   useEffect(() => {
     try {
@@ -42,11 +45,29 @@ export function InterviewProvider({ children }) {
     } catch {}
   }, [sessionId]);
 
+  useEffect(() => {
+    try {
+      if (reportId) sessionStorage.setItem('ai_active_report_id', reportId);
+      else sessionStorage.removeItem('ai_active_report_id');
+    } catch {}
+  }, [reportId]);
+
   const resetInterview = () => {
+    try {
+      sessionStorage.removeItem('ai_active_session_id');
+      sessionStorage.removeItem('ai_active_report_id');
+    } catch {}
+    setSessionId(null);
+    setSessionData(null);
+    setReportId(null);
+  };
+
+  const clearAllData = () => {
     try {
       sessionStorage.removeItem('ai_active_cv_profile');
       sessionStorage.removeItem('ai_active_interview_mode');
       sessionStorage.removeItem('ai_active_session_id');
+      sessionStorage.removeItem('ai_active_report_id');
     } catch {}
     setCvProfile(null);
     setInterviewMode(null);
@@ -62,7 +83,8 @@ export function InterviewProvider({ children }) {
       sessionId, setSessionId,
       sessionData, setSessionData,
       reportId, setReportId,
-      resetInterview
+      resetInterview,
+      clearAllData
     }}>
       {children}
     </InterviewContext.Provider>
