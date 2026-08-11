@@ -30,7 +30,7 @@ export default function InterviewScreen() {
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
 
-  const { cvProfile, setCvProfile, interviewMode, sessionId, setSessionId, setSessionData, setReportId, resetInterview } = useInterview();
+  const { cvProfile, setCvProfile, interviewMode, sessionId, setSessionId, setSessionData, setReportId, resetInterview, clearAllData } = useInterview();
 
   const [stage,              setStage]              = useState('loading');
   const [messages,           setMessages]           = useState([]);
@@ -367,7 +367,7 @@ export default function InterviewScreen() {
               </button>
               <button
                 onClick={() => {
-                  resetInterview();
+                  clearAllData();
                   navigate('/');
                 }}
                 className="flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-btn border border-border text-text-primary text-xs font-semibold hover:border-border/80 transition-all min-h-[40px]"

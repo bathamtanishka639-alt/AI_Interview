@@ -27,7 +27,7 @@ const PARSING_STEPS = [
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { cvProfile, setCvProfile } = useInterview();
+  const { cvProfile, setCvProfile, clearAllData } = useInterview();
   const { resolved, toggle } = useTheme();
   const [uploadState, setUploadState] = useState(UPLOAD_STATES.IDLE);
   const [isGlobalDragging, setIsGlobalDragging] = useState(false);
@@ -36,9 +36,16 @@ export default function LandingPage() {
   const [error, setError] = useState('');
   const [fileName, setFileName] = useState('');
   const [fileSize, setFileSize] = useState('');
-  const [parsedProfile, setParsedProfile] = useState(null);
+  const [parsedProfile, setParsedProfile] = useState(cvProfile || null);
   const fileInputRef = useRef(null);
   const sectionContainerRef = useRef(null);
+
+  useEffect(() => {
+    if (cvProfile && uploadState === UPLOAD_STATES.IDLE && !parsedProfile) {
+      setParsedProfile(cvProfile);
+      setUploadState(UPLOAD_STATES.SUCCESS);
+    }
+  }, [cvProfile, uploadState, parsedProfile]);
 
   const processFile = useCallback(async (file) => {
     const allowedMIMEs = [
@@ -187,8 +194,8 @@ export default function LandingPage() {
   const handleContinue = () => navigate('/interview/setup');
 
   const handleReset = () => {
+    clearAllData();
     setParsedProfile(null);
-    setCvProfile(null);
     setUploadState(UPLOAD_STATES.IDLE);
     setFileName('');
     setFileSize('');
