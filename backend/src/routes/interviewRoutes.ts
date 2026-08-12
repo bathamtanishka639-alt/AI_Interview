@@ -343,9 +343,29 @@ router.get('/interview/session/:sessionId', (req: Request, res: Response) => {
 });
 
 router.get('/interview/report/:id', async (req: Request, res: Response) => {
-  const report = await interviewEngine.getReport(req.params.id);
+  const targetId = req.params.id;
+  const session = interviewEngine.getSession(targetId);
+  if (session && session.status !== 'completed') {
+    const answeredCount = session.timedQuestions?.filter(q => q.status === 'answered').length || 0;
+    return res.status(200).json({
+      success: true,
+      status: 'incomplete',
+      data: {
+        status: 'incomplete',
+        message: 'Interview session is currently in progress. Final report is only generated upon completion.',
+        sessionId: session.sessionId,
+        candidateName: session.cvProfile?.name || 'Candidate',
+        interviewMode: session.interviewMode,
+        answeredQuestions: answeredCount,
+        totalQuestions: session.questions?.length || 10,
+        interviewStartedAt: session.interviewStartedAt || session.startTime
+      }
+    });
+  }
+
+  const report = await interviewEngine.getReport(targetId);
   if (!report) {
-    return res.status(404).json({ success: false, error: `Report not found for id: ${req.params.id}` });
+    return res.status(404).json({ success: false, error: `No completed evaluation report found for id: ${targetId}` });
   }
   const completedCount = interviewEngine.getCompletedCount();
   res.json({ success: true, data: { ...report, completedCount } });

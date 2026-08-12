@@ -382,8 +382,6 @@ export class InterviewEngine {
         const latestSession = completedSessions[completedSessions.length - 1];
         return await this.generateReportForSession(latestSession);
       }
-      const anySession = Array.from(this.sessions.values())[0];
-      if (anySession) return await this.generateReportForSession(anySession);
       return undefined;
     }
 
@@ -391,7 +389,11 @@ export class InterviewEngine {
     if (existing) return existing;
 
     const session = this.sessions.get(identifier);
-    if (session) return await this.generateReportForSession(session);
+    if (session) {
+      if (session.status === 'completed') {
+        return await this.generateReportForSession(session);
+      }
+    }
 
     return undefined;
   }
@@ -402,16 +404,13 @@ export class InterviewEngine {
     if (!session.interviewStartedAt) {
       session.interviewStartedAt = session.startTime || nowIso;
     }
-    if (!session.interviewEndedAt) {
+    if (session.status === 'completed' && !session.interviewEndedAt) {
       session.endTime = session.endTime || nowIso;
       session.interviewEndedAt = session.endTime;
     }
-    if (session.status !== 'completed') {
-      session.status = 'completed';
-    }
 
     const startMs = new Date(session.interviewStartedAt).getTime();
-    const endMs = new Date(session.interviewEndedAt).getTime();
+    const endMs = session.interviewEndedAt ? new Date(session.interviewEndedAt).getTime() : Date.now();
     const durationSec = Math.max(1, Math.round((endMs - startMs) / 1000));
     session.interviewDurationSeconds = durationSec;
 
@@ -428,7 +427,7 @@ export class InterviewEngine {
 
     const overview: InterviewReportOverview = {
       interviewStartedAt: session.interviewStartedAt,
-      interviewEndedAt: session.interviewEndedAt,
+      interviewEndedAt: session.interviewEndedAt || nowIso,
       interviewDurationSeconds: durationSec,
       totalQuestions: timedLogs.length,
       answeredQuestions: answeredCount,
