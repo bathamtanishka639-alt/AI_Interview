@@ -222,6 +222,11 @@ export default function LandingPage() {
     sectionContainerRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const handleScrollToUpload = () => {
+    scrollToTab('upload');
+    setUploadState(UPLOAD_STATES.IDLE);
+  };
+
   const isLoading = uploadState === UPLOAD_STATES.UPLOADING || uploadState === UPLOAD_STATES.PARSING;
 
   return (
@@ -297,7 +302,7 @@ export default function LandingPage() {
                 </button>
 
                 <button
-                  onClick={handleReset}
+                  onClick={handleScrollToUpload}
                   className="w-full sm:w-auto px-4 py-2.5 rounded-btn border border-border/80 bg-surface-raised/80 hover:bg-surface-raised hover:border-border text-text-secondary hover:text-text-primary text-xs font-semibold hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 min-h-[42px]"
                   title="Upload a new CV"
                 >
@@ -420,6 +425,23 @@ export default function LandingPage() {
                       </div>
                     ) : (
                       <div className="py-4">
+                        {cvProfile && (
+                          <div className="mb-4 inline-flex items-center gap-2 px-3.5 py-1 rounded-pill bg-signal-500/10 border border-signal-500/25 text-xs text-text-primary">
+                            <FileCheck size={13} className="text-signal-500" />
+                            <span>Active Profile: <strong>{cvProfile.name}</strong></span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setUploadState(UPLOAD_STATES.SUCCESS);
+                                setParsedProfile(cvProfile);
+                              }}
+                              className="ml-1 text-[11px] underline text-agent-600 dark:text-agent-400 font-semibold hover:text-agent-500"
+                            >
+                              View Card
+                            </button>
+                          </div>
+                        )}
                         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-agent-500/15 to-signal-500/10 border border-agent-500/20 flex items-center justify-center mx-auto mb-4 text-agent-500">
                           <Upload size={24} />
                         </div>
@@ -494,7 +516,7 @@ export default function LandingPage() {
 
                     <div className="pt-4 border-t border-border/60 flex items-center justify-between gap-3">
                       <button
-                        onClick={handleReset}
+                        onClick={() => setUploadState(UPLOAD_STATES.IDLE)}
                         className="px-4 py-2 rounded-btn border border-border text-xs font-medium text-text-secondary hover:text-text-primary hover:border-[rgba(124,127,251,0.40)] hover:scale-[1.01] transition-all min-h-[40px]"
                       >
                         Upload Different CV
