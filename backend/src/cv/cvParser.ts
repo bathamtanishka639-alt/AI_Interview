@@ -1,51 +1,142 @@
 import { CandidateProfile } from '../models/interfaces';
 import { LLMService } from '../services/llmService';
 
+export interface CvValidationResult {
+  valid: boolean;
+  reason?: string;
+  candidateName?: string;
+}
+
 export class CvParser {
-  public static isCvOrResumeDocument(text: string): { valid: boolean; reason?: string } {
-    if (!text || text.trim().length < 30) {
-      return { valid: false, reason: 'The uploaded file is empty or too short. Please upload a complete CV or resume.' };
+  /**
+   * High-precision two-tier CV verification:
+   * Tier 1: Structural & keyword heuristic filter (disqualifies research papers, code, invoices, terms)
+   * Tier 2: Gemini LLM intent classification (verifies if text represents a genuine candidate CV/resume)
+   */
+  public static async verifyCvDocument(text: string): Promise<CvValidationResult> {
+    if (!text || text.trim().length < 40) {
+      return { valid: false, reason: 'The uploaded file is empty or too short to be a valid CV.' };
     }
 
     const lower = text.toLowerCase();
-    const cvSignals = [
-      'experience', 'education', 'skills', 'projects', 'summary', 'work', 'employment',
-      'history', 'qualifications', 'certifications', 'curriculum', 'vitae', 'resume',
-      'bachelor', 'master', 'university', 'college', 'engineer', 'developer', 'architect',
-      'analyst', 'internship', 'tech stack', 'technologies', 'proficiencies', 'contact',
-      'email', 'phone', 'portfolio', 'github', 'linkedin', 'coursework', 'diploma'
-    ];
 
-    let matchCount = 0;
-    for (const signal of cvSignals) {
-      if (lower.includes(signal)) {
-        matchCount++;
+    // 1. Check for non-CV document disqualifiers
+    const researchPaperMarkers = [
+      'abstract', 'references', 'arxiv:', 'doi:', 'ieee transactions',
+      'proceedings of', 'bibliography', 'journal of', 'figure 1:', 'table 1:'
+    ];
+    let researchPaperMatches = 0;
+    for (const marker of researchPaperMarkers) {
+      if (lower.includes(marker)) researchPaperMatches++;
+    }
+    if (researchPaperMatches >= 2) {
+      return {
+        valid: false,
+        reason: 'The uploaded document appears to be an academic research paper or article, not a candidate CV or resume.'
+      };
+    }
+
+    const nonCvDocMarkers = [
+      'terms and conditions', 'privacy policy', 'invoice #', 'purchase order',
+      'table of contents', 'chapter 1', 'user manual', 'end user license agreement'
+    ];
+    for (const marker of nonCvDocMarkers) {
+      if (lower.includes(marker)) {
+        return {
+          valid: false,
+          reason: 'The uploaded file appears to be a legal, financial, or documentation text, not a candidate CV or resume.'
+        };
       }
     }
 
-    if (matchCount < 2) {
+    const codeFileMarkers = [
+      'import react from', 'export class ', 'public static void main',
+      'function component(', 'module.exports =', '<!doctype html>'
+    ];
+    for (const marker of codeFileMarkers) {
+      if (lower.includes(marker)) {
+        return {
+          valid: false,
+          reason: 'The uploaded file contains raw source code or markup, not a candidate CV or resume.'
+        };
+      }
+    }
+
+    // 2. Check for required CV structural sections
+    const sectionHeaders = [
+      'experience', 'work history', 'employment', 'education', 'skills',
+      'projects', 'summary', 'certifications', 'qualifications', 'contact'
+    ];
+    const matchedSections = sectionHeaders.filter(header => lower.includes(header));
+    if (matchedSections.length < 2) {
       return {
         valid: false,
-        reason: 'The uploaded document does not appear to be a valid CV or resume. Please upload a document containing work experience, skills, and education.'
+        reason: 'The document lacks standard resume sections (work experience, skills, education, or projects).'
       };
+    }
+
+    // 3. LLM Intent & Structure Classification
+    try {
+      const systemPrompt = `You are a Strict Document Classifier for an AI Interview Platform.
+Determine if the provided text is a candidate's CV / Resume (Curriculum Vitae) or NOT.
+
+INVALID DOCUMENT TYPES (MUST RETURN isCv: false):
+- Academic research papers, articles, theses, assignment instructions
+- Software documentation, API references, source code files
+- Invoices, terms of service, legal contracts, user manuals
+- Generic essays, articles, blog posts, news stories, random notes
+
+VALID CV / RESUME (MUST RETURN isCv: true):
+- A candidate's personal document detailing their professional experience, technical skills, education, contact info, or projects for job application.
+
+Return ONLY valid JSON matching this schema:
+{
+  "isCv": boolean,
+  "candidateName": string or null,
+  "reason": "Brief explanation if invalid, or confirming valid CV"
+}`;
+
+      const userPrompt = `Classify this document:\n\n${text.substring(0, 3000)}`;
+
+      const llmRes = await LLMService.generateCompletion(systemPrompt, userPrompt, 500);
+      if (llmRes.content && llmRes.content.trim()) {
+        let jsonStr = llmRes.content.trim();
+        jsonStr = jsonStr.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '');
+        if (jsonStr.startsWith('{') && jsonStr.endsWith('}')) {
+          const parsed = JSON.parse(jsonStr);
+          if (typeof parsed.isCv === 'boolean') {
+            if (!parsed.isCv) {
+              return {
+                valid: false,
+                reason: parsed.reason || 'The uploaded document does not appear to be a candidate CV or resume.'
+              };
+            }
+            return {
+              valid: true,
+              candidateName: parsed.candidateName || undefined
+            };
+          }
+        }
+      }
+    } catch (err: any) {
+      console.warn('[CvParser] LLM document classification warning:', err.message);
     }
 
     return { valid: true };
   }
 
   public static async parse(cvText: string): Promise<CandidateProfile> {
-    const check = CvParser.isCvOrResumeDocument(cvText);
+    const check = await CvParser.verifyCvDocument(cvText);
     if (!check.valid) {
-      throw new Error(check.reason);
+      throw new Error(check.reason || 'The uploaded document is not a valid CV or resume.');
     }
 
     const systemPrompt = `You are an expert CV/Resume Parser. Extract structured information from the provided CV text and return it ONLY as a valid JSON object.
     
 RULES:
 - Return ONLY valid JSON, no markdown, no explanation, no code blocks.
-- If a field has no data in the CV, return an empty array [] for array fields or null for string fields.
-- Do NOT invent or guess any information not present in the CV.
-- Extract exact names, technologies, and experiences as written in the CV.
+- Extract exact names, technologies, projects, and experiences as written in the CV.
+- If a field has no data, return an empty array [] for array fields or null for string fields.
 
 Return this exact JSON structure:
 {
@@ -53,19 +144,19 @@ Return this exact JSON structure:
   "email": "string or null",
   "phone": "string or null",
   "education": ["array of education entries as strings"],
-  "skills": ["array of all skills"],
-  "programmingLanguages": ["array of programming languages only"],
-  "frameworks": ["array of frameworks and libraries only"],
+  "skills": ["array of all technical and professional skills"],
+  "programmingLanguages": ["array of programming languages"],
+  "frameworks": ["array of frameworks and libraries"],
   "tools": ["array of tools, platforms, and software"],
-  "projects": ["array of project descriptions as strings"],
-  "internships": ["array of internship descriptions as strings"],
-  "workExperience": ["array of work experience descriptions as strings"],
+  "projects": ["array of project descriptions"],
+  "internships": ["array of internships"],
+  "workExperience": ["array of work experience"],
   "certifications": ["array of certifications"],
-  "achievements": ["array of achievements and awards"],
+  "achievements": ["array of achievements"],
   "rawSummary": "1-2 sentence professional summary derived from the CV"
 }`;
 
-    const userPrompt = `Parse this CV and extract the structured profile:\n\n${cvText.substring(0, 6000)}`;
+    const userPrompt = `Parse this candidate CV:\n\n${cvText.substring(0, 6000)}`;
 
     try {
       const llmRes = await LLMService.generateCompletion(systemPrompt, userPrompt, 1500);
@@ -77,7 +168,7 @@ Return this exact JSON structure:
         if (jsonStr.startsWith('{') && jsonStr.endsWith('}')) {
           const parsed = JSON.parse(jsonStr);
           return {
-            name: parsed.name || CvParser.extractNameFromText(cvText),
+            name: parsed.name || check.candidateName || CvParser.extractNameFromText(cvText),
             email: parsed.email || CvParser.extractEmailFromText(cvText),
             phone: parsed.phone || undefined,
             education: Array.isArray(parsed.education) ? parsed.education : [],
