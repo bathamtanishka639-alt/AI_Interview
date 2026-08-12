@@ -286,14 +286,25 @@ export default function LandingPage() {
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
             {cvProfile ? (
-              <button
-                onClick={() => navigate('/interview/setup')}
-                className="w-full sm:w-auto px-7 py-3.5 rounded-btn text-white font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-glow min-h-[48px]"
-                style={{ background: 'linear-gradient(135deg, #14E0B4 0%, #7C7FFB 100%)' }}
-              >
-                <span>Continue Interview ({cvProfile.name || 'Uploaded CV'})</span>
-                <ArrowRight size={15} />
-              </button>
+              <>
+                <button
+                  onClick={() => navigate('/interview/setup')}
+                  className="w-full sm:w-auto px-7 py-3.5 rounded-btn text-white font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-glow min-h-[48px]"
+                  style={{ background: 'linear-gradient(135deg, #14E0B4 0%, #7C7FFB 100%)' }}
+                >
+                  <span>Continue Interview ({cvProfile.name || 'Uploaded CV'})</span>
+                  <ArrowRight size={15} />
+                </button>
+
+                <button
+                  onClick={handleReset}
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-btn border border-border/80 bg-surface-raised/80 hover:bg-surface-raised hover:border-border text-text-secondary hover:text-text-primary text-xs font-semibold hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 min-h-[42px]"
+                  title="Upload a new CV"
+                >
+                  <Upload size={13} className="text-agent-500" />
+                  <span>Upload New CV</span>
+                </button>
+              </>
             ) : (
               <button
                 onClick={() => scrollToTab('upload')}
