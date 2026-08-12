@@ -125,7 +125,9 @@ async function runScenarioTest(
 
   // Generate Final Report
   console.log(`\n--- Generating Final Evaluation Report ---`);
-  const report = await engine.getReport(session.sessionId);
+  session.status = 'completed';
+  session.interviewEndedAt = new Date().toISOString();
+  const report = await engine.generateReportForSession(session);
 
   console.log(`[Final Feedback Scores]:`);
   console.log(`  - Technical Score: ${report?.feedback.technicalScore}/100`);
