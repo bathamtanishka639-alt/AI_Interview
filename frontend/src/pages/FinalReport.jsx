@@ -77,17 +77,63 @@ export default function FinalReport() {
     );
   }
 
+  if (report.status === 'incomplete' || report.data?.status === 'incomplete') {
+    const incData = report.data || report;
+    return (
+      <PageContainer title="Incomplete Interview Session">
+        <div className="max-w-xl mx-auto py-10 antialiased">
+          <div className="rounded-card-lg glass border border-amber-500/30 p-8 shadow-raised text-center space-y-5">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mx-auto">
+              <Brain size={26} />
+            </div>
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-mono font-bold uppercase mb-3">
+                Incomplete Session
+              </div>
+              <h2 className="font-display text-2xl font-bold text-text-primary">
+                Interview is In Progress
+              </h2>
+              <p className="text-xs text-text-secondary mt-2 leading-relaxed">
+                Candidate <strong>{incData.candidateName || 'Candidate'}</strong> answered {incData.answeredQuestions ?? 0} of {incData.totalQuestions ?? 10} questions. Final evaluation scores and performance feedback are only generated upon completing the session.
+              </p>
+            </div>
+
+            <div className="pt-4 border-t border-border/60 flex items-center justify-center gap-3">
+              <button
+                onClick={() => navigate('/interview/live')}
+                className="px-6 py-2.5 rounded-btn text-white text-xs font-bold shadow-glow min-h-[40px]"
+                style={{ background: 'linear-gradient(135deg, #14E0B4 0%, #7C7FFB 100%)' }}
+              >
+                Resume Interview
+              </button>
+              <button
+                onClick={() => {
+                  resetInterview();
+                  navigate('/interview/setup');
+                }}
+                className="px-4 py-2.5 rounded-btn border border-border text-text-secondary text-xs font-medium hover:text-text-primary min-h-[40px]"
+              >
+                Start Fresh
+              </button>
+            </div>
+          </div>
+        </div>
+      </PageContainer>
+    );
+  }
+
   const modeLabel     = MODE_LABELS[report.interviewMode] || report.interviewMode || 'Technical';
   const completedList = (allInterviews || []).filter((i) => i.status === 'completed');
+  const fb            = report.feedback || {};
 
   const scoreBars = [
-    { label: 'Technical Understanding',   score: report.scoreCards?.[0]?.score ?? 84 },
-    { label: 'Communication & Clarity',   score: report.scoreCards?.[1]?.score ?? 78 },
-    { label: 'Problem Solving',           score: report.scoreCards?.[2]?.score ?? 86 },
-    { label: 'Confidence & Delivery',     score: report.scoreCards?.[3]?.score ?? 80 },
+    { label: 'Technical Understanding',   score: fb.technicalScore ?? 0 },
+    { label: 'Communication & Clarity',   score: fb.communicationScore ?? 0 },
+    { label: 'Problem Solving',           score: fb.problemSolvingScore ?? 0 },
+    { label: 'Confidence & Delivery',     score: fb.confidenceScore ?? 0 },
   ];
 
-  const overallScore = report.overallScore || 82;
+  const overallScore = fb.technicalScore ?? 0;
   const ratingText   = overallScore >= 80 ? 'Strong Performance' : overallScore >= 65 ? 'Satisfactory' : 'Needs Practice';
   const ratingColor  = overallScore >= 80 ? 'text-[#0BBFA0] dark:text-[#14E0B4]'
                      : overallScore >= 65 ? 'text-[#E09800] dark:text-[#FFB020]'
