@@ -4,6 +4,7 @@ import mammoth from 'mammoth';
 import { InterviewEngine } from '../interview/interviewEngine';
 import { CvParser } from '../cv/cvParser';
 import { CandidateProfile, InterviewMode } from '../models/interfaces';
+import { uploadAndParseRateLimiter, geminiInterviewRateLimiter } from '../middleware/rateLimiter';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require('pdf-parse') as (buffer: Buffer) => Promise<{ text: string }>;
@@ -34,7 +35,7 @@ const upload = multer({
   }
 });
 
-router.post('/cv/parse', upload.single('cv'), async (req: Request, res: Response) => {
+router.post('/cv/parse', uploadAndParseRateLimiter, upload.single('cv'), async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, error: 'No file uploaded. Please upload a PDF or DOCX file.' });
@@ -73,7 +74,7 @@ router.post('/cv/parse', upload.single('cv'), async (req: Request, res: Response
   }
 });
 
-router.post('/ats/analyze', async (req: Request, res: Response) => {
+router.post('/ats/analyze', uploadAndParseRateLimiter, async (req: Request, res: Response) => {
   try {
     const { cvText, jobDescription } = req.body || {};
     if (!cvText || typeof cvText !== 'string' || cvText.trim().length < 30) {
@@ -96,7 +97,7 @@ router.post('/ats/analyze', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/cv/ats', upload.single('cv'), async (req: Request, res: Response) => {
+router.post('/cv/ats', uploadAndParseRateLimiter, upload.single('cv'), async (req: Request, res: Response) => {
   try {
     const jobDescription = req.body?.jobDescription;
     let cvProfile: CandidateProfile | null = null;
@@ -179,7 +180,7 @@ router.get('/curriculum', (req: Request, res: Response) => {
   res.json({ success: true, data: curriculum });
 });
 
-router.post('/interview/start', async (req: Request, res: Response) => {
+router.post('/interview/start', geminiInterviewRateLimiter, async (req: Request, res: Response) => {
   const { cvProfile, interviewMode, difficulty = 'intermediate' } = req.body;
 
   if (!cvProfile) {
@@ -214,7 +215,7 @@ router.post('/interview/start', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/interview/message', async (req: Request, res: Response) => {
+router.post('/interview/message', geminiInterviewRateLimiter, async (req: Request, res: Response) => {
   const { sessionId, message = '', status, answerStartedAt } = req.body;
 
   if (!sessionId) {

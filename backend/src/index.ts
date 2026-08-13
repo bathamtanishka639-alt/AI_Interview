@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import interviewRoutes from './routes/interviewRoutes';
 import { LoggerMiddleware } from './middleware/logger';
 import { ErrorMiddleware } from './middleware/errorHandler';
+import { globalApiRateLimiter } from './middleware/rateLimiter';
 
 dotenv.config();
 
@@ -15,7 +16,7 @@ app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(LoggerMiddleware.log);
 
-app.use('/api', interviewRoutes);
+app.use('/api', globalApiRateLimiter, interviewRoutes);
 
 app.get('/', (req, res) => {
   res.json({
